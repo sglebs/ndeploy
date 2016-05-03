@@ -1,0 +1,6 @@
+env
+.idea
+confirm.txt
+drop.txt
+.venv
+__pycache__

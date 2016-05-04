@@ -116,6 +116,13 @@ def app_has_docker_options(options, original_app_dir_name):
     return os.path.exists(docker_options_config_file_path(options, original_app_dir_name))
 
 
+def docker_options_iterator(options, original_app_dir_name):
+    for line in templated_file_lines_iterator(options, docker_options_config_file_path(options, original_app_dir_name)):
+        key, _, value = line.strip().partition("=")
+        yield [key, value]
+
+
+
 def env_vars_config_file_path(options, original_app_dir_name):
     return "%s/envs/%s.env" % (get_configdir(options), original_app_dir_name)
 

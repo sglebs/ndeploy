@@ -86,9 +86,11 @@ def dokku_set_docker_options_if_needed(options, repo_url, app_name):
     if not app_has_docker_options(options, original_app_name):
         return
     print("...Configuring docker options for %s" % app_name)
-    for phase, phase_options in env_vars_iterator(options, original_app_name):
-        os.system('ssh dokku@%s docker-options:add %s %s "%s"' % (
-            get_deploy_host(options), app_name, phase, phase_options))
+    for phase, phase_options in docker_options_iterator(options, original_app_name):
+        cmd = 'ssh dokku@%s docker-options:add %s %s "%s"' % (
+            get_deploy_host(options), app_name, phase, phase_options)
+        print(cmd)
+        os.system(cmd)
 
 
 @task

@@ -58,7 +58,6 @@ def options_to_dict(options):
     result[DEPLOY_HOST_PARAM_NAME] = get_deploy_host(options)  # make sure it is present
     result[EXPOSE_HOST_PARAM_NAME] = get_expose_host(options)  # make sure it is present
     result[DEPLOY_SYSTEM_PARAM_NAME] = get_system(options)  # make sure it is present
-    result["subdomain"] = "{subdomain}"  # this one is special, we cannot replace
     return result
 
 
@@ -73,19 +72,24 @@ def parent_dir_path_for(a_path):
 def current_parent_path():
     return parent_dir_path_for(current_path())
 
+def merge_two_dicts(x, y):
+    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    result = x.copy()
+    result.update(y)
+    return result
 
-def templated_file_contents(options, file_path):
+def templated_file_contents(options, file_path, **kwargs):
     if os.path.exists(file_path):
         env = Environment()
         env.loader = FileSystemLoader(os.path.dirname(file_path))
         template = env.get_template(os.path.basename(file_path))
-        return template.render(options_to_dict(options))
+        return template.render(merge_two_dicts(kwargs, options_to_dict(options)))
     else:
         return ""
 
 
-def templated_file_lines_iterator(options, file_path):
-    for line in templated_file_contents(options, file_path).splitlines():
+def templated_file_lines_iterator(options, file_path, **kwargs):
+    for line in templated_file_contents(options, file_path, **kwargs).splitlines():
         trimmed_line = line.strip()
         if len(trimmed_line) > 0 and not line.startswith("#"):
             yield trimmed_line
@@ -131,8 +135,8 @@ def app_has_env_vars(options, original_app_dir_name):
     return os.path.exists(env_vars_config_file_path(options, original_app_dir_name))
 
 
-def env_vars_iterator(options, original_app_dir_name):
-    for line in templated_file_lines_iterator(options, env_vars_config_file_path(options, original_app_dir_name)):
+def env_vars_iterator(options, original_app_dir_name, **kwargs):
+    for line in templated_file_lines_iterator(options, env_vars_config_file_path(options, original_app_dir_name), **kwargs):
         key, _, value = line.strip().partition("=")
         yield [key, value]
 

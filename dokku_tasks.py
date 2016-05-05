@@ -173,6 +173,27 @@ def dokku_create_rabbitmq_services(options):
         if len(err) > 0 and "already exposed" not in err:
             return False
 
+@task
+def dokku_create_redis_services(options):
+    print("------------------------------------------------------------")
+    print("REDIS SETUP")
+    print("------------------------------------------------------------")
+    if not platform_needs_redis_as_a_service(options):
+        return
+    for service_name in redis_services_iterator(options):
+        cmd = "ssh dokku@%s redis:create %s" % (get_deploy_host(options), service_name)
+        print("...Creating Redis Service %s: %s" % (service_name, cmd))
+        err, out = execute_program(cmd)
+        print(out)
+        print(err)
+        if len(err) > 0 and "not resolve host" in err:
+            return False
+
+@task
+@needs(['dokku_create_empty_apps'])
+def dokku_inject_rabbitmq_services(options):
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
+        dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name)
 
 @task
 @needs(['dokku_create_empty_apps'])
@@ -201,6 +222,17 @@ def dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name):
         os.system(cmd)
 
 
+def dokku_inject_redis_service_if_needed(options, repo_url, app_name):
+    original_app_name = dir_name_for_repo(repo_url)
+    if not app_has_redis(options, original_app_name):
+        return
+    for service_name in redis_servicenames_iterator(options, original_app_name):
+        cmd = "ssh dokku@%s redis:link %s %s" % (get_deploy_host(options), service_name, app_name)
+        print("...Configuring Redis service %s for app %s: %s" % (service_name, app_name, cmd))
+        os.system(cmd)
+        #os.system("ssh dokku@%s redis:promote %s %s" % (get_deploy_host(options), service_name, app_name))
+
+
 @task
 @needs(['dokku_create_empty_apps', 'dokku_start_postgres'])
 def dokku_create_configured_apps(options):
@@ -209,6 +241,7 @@ def dokku_create_configured_apps(options):
         dokku_create_database_if_needed(options, repo_url, app_name)
         dokku_create_mongo_if_needed(options, repo_url, app_name)
         dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name)
+        dokku_inject_redis_service_if_needed(options, repo_url, app_name)
         dokku_create_apps_env_vars_if_needed(options, repo_url, app_name)  # env vars AFTER because some slam DATABASE_URL
 
 
@@ -261,9 +294,15 @@ def dokku_rm_rabbitmq_services(options):
         print("...Removing RabbitMQ Service %s" % service_name)
         os.system("ssh dokku@%s rabbitmq:destroy %s < confirm.txt" % (get_deploy_host(options), service_name))
 
+def dokku_rm_redis_services(options):
+    for service_name in redis_services_iterator(options):
+        os.system("echo %s > confirm.txt" % service_name)
+        cmd = "ssh dokku@%s redis:destroy %s < confirm.txt" % (get_deploy_host(options), service_name)
+        print("...Removing Redis Service %s: %s " % (service_name, cmd))
+        os.system(cmd)
 
 @task
-@needs(['dokku_create_rabbitmq_services', 'dokku_remote_git_add', 'dokku_create_configured_apps', 'dokku_just_deploy'])
+@needs(['dokku_create_rabbitmq_services', 'dokku_create_redis_services', 'dokku_remote_git_add', 'dokku_create_configured_apps', 'dokku_just_deploy'])
 def dokku_deploy(options):
     print(options)
 
@@ -276,6 +315,7 @@ def dokku_undeploy(options):
         os.system("echo %s > confirm.txt" % app_name)
         os.system("ssh dokku@%s apps:destroy %s < confirm.txt" % (get_deploy_host(options), app_name))
     dokku_rm_rabbitmq_services(options)
+    dokku_rm_redis_services(options)
 
 
 @task

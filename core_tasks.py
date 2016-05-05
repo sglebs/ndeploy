@@ -56,6 +56,7 @@ def app_name_for_repo(repo_url):
 def options_to_dict(options):
     result = {key: value for key, value in options.items()}
     result[DEPLOY_HOST_PARAM_NAME] = get_deploy_host(options)  # make sure it is present
+    result[EXPOSE_HOST_PARAM_NAME] = get_expose_host(options)  # make sure it is present
     result[DEPLOY_SYSTEM_PARAM_NAME] = get_system(options)  # make sure it is present
     result["subdomain"] = "{subdomain}"  # this one is special, we cannot replace
     return result
@@ -122,7 +123,6 @@ def docker_options_iterator(options, original_app_dir_name):
         yield [key, value]
 
 
-
 def env_vars_config_file_path(options, original_app_dir_name):
     return "%s/envs/%s.env" % (get_configdir(options), original_app_dir_name)
 
@@ -135,6 +135,30 @@ def env_vars_iterator(options, original_app_dir_name):
     for line in templated_file_lines_iterator(options, env_vars_config_file_path(options, original_app_dir_name)):
         key, _, value = line.strip().partition("=")
         yield [key, value]
+
+
+def platform_needs_redis_as_a_service(options):
+    redis_services_config_path = "%s/redis/services.txt" % (get_configdir(options))
+    return os.path.exists(redis_services_config_path)
+
+
+def redis_services_iterator(options):
+    redis_services_config_path = "%s/redis/services.txt" % (get_configdir(options))
+    for line in templated_file_lines_iterator(options, redis_services_config_path):
+        yield line.strip()
+
+
+def redis_config_file_path(options, original_app_dir_name):
+    return "%s/redis/%s.txt" % (get_configdir(options), original_app_dir_name)
+
+
+def app_has_redis(options, original_app_dir_name):
+    return os.path.exists(redis_config_file_path(options, original_app_dir_name))
+
+
+def redis_servicenames_iterator(options, original_app_dir_name):
+    for line in templated_file_lines_iterator(options, redis_config_file_path(options, original_app_dir_name)):
+        yield line.strip()
 
 
 def platform_needs_rabbitmq_as_a_service(options):

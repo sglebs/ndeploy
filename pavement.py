@@ -1,9 +1,10 @@
 import sys
+from paver.tasks import main
+#from paver.easy import task, needs
 
+sys.path.insert(0, ".")
 from dokku_tasks import *
 from openshift_tasks import *
-from paver.tasks import main
-from paver.easy import task, needs
 
 @task
 def undeploy(options):

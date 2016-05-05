@@ -43,6 +43,9 @@ def dokku_remote_git_add(options):
 
 @task
 def dokku_create_empty_apps(options):
+    print("------------------------------------------------------------")
+    print("CREATING APPS")
+    print("------------------------------------------------------------")
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         cmd = "ssh dokku@%s apps:create %s" % (get_deploy_host(options), app_name)
         err, out = execute_program(cmd)
@@ -56,6 +59,9 @@ def dokku_create_empty_apps(options):
 @task
 @needs(['dokku_create_empty_apps'])
 def dokku_create_apps_env_vars(options):
+    print("------------------------------------------------------------")
+    print("ENV VARS CONFIG")
+    print("------------------------------------------------------------")
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         dokku_create_apps_env_vars_if_needed(options, repo_url, app_name)
 
@@ -92,12 +98,18 @@ def dokku_set_docker_options_if_needed(options, repo_url, app_name):
         print(cmd)
         os.system(cmd)
 
+@task
+def dokku_start_postgres(options):
+    cmd = "ssh dokku@%s psql:start" % (get_deploy_host(options))
+    print("...Starting database service:  %s" % cmd)
+    execute_program_and_print_output(cmd)
 
 @task
-@needs(['dokku_create_empty_apps'])
+@needs(['dokku_create_empty_apps', 'dokku_start_postgres'])
 def dokku_create_databases(options):
-    cmd = "ssh dokku@%s psql:start" % (get_deploy_host(options))
-    execute_program_and_print_output(cmd)
+    print("------------------------------------------------------------")
+    print("DATABASE SETUP")
+    print("------------------------------------------------------------")
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         ok = dokku_create_database_if_needed(options, repo_url, app_name)
         if not ok:
@@ -118,6 +130,9 @@ def dokku_create_database_if_needed(options, repo_url, app_name):
 @task
 @needs(['dokku_create_empty_apps'])
 def dokku_create_mongos(options):
+    print("------------------------------------------------------------")
+    print("MONGO SETUP")
+    print("------------------------------------------------------------")
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         dokku_create_mongo_if_needed(options, repo_url, app_name)
 
@@ -133,6 +148,9 @@ def dokku_create_mongo_if_needed(options, repo_url, app_name):
 
 @task
 def dokku_create_rabbitmq_services(options):
+    print("------------------------------------------------------------")
+    print("RABBITMQ SETUP")
+    print("------------------------------------------------------------")
     if not platform_needs_rabbitmq_as_a_service(options):
         return
     for line in rabbitmqs_services_iterator(options):
@@ -184,7 +202,7 @@ def dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name):
 
 
 @task
-@needs(['dokku_create_empty_apps'])
+@needs(['dokku_create_empty_apps', 'dokku_start_postgres'])
 def dokku_create_configured_apps(options):
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         dokku_set_docker_options_if_needed(options, repo_url, app_name)

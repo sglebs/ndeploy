@@ -71,7 +71,7 @@ def dokku_create_apps_env_vars_if_needed(options, repo_url, app_name):
     if app_has_env_vars(options, original_app_name):
         print("...Configuring env vars for %s" % app_name)
         key_values = ['%s="%s"' % (key, value.replace(" ", "\\ ").replace('"', '\\"')) for key, value in
-                      env_vars_iterator(options, original_app_name)]
+                      env_vars_iterator(options, original_app_name, appname=app_name)]
         all_vars = " ".join(key_values)
         cmd = "ssh dokku@%s config:set --no-restart %s %s" % (get_deploy_host(options), app_name, all_vars)
         print(cmd)

@@ -115,7 +115,7 @@ def openshift_create_apps_env_vars_if_needed(options, repo_url, app_name):
     original_app_name = dir_name_for_repo(repo_url)
     if app_has_env_vars(options, original_app_name):
         key_values = ['%s="%s"' % (key, value.format(**options_as_dict)) for key, value in
-                      env_vars_iterator(options, original_app_name)]
+                      env_vars_iterator(options, original_app_name, appname=app_name)]
         if len(key_values) > 0:
             all_vars = " ".join(key_values)
             cmd = 'oc env dc/%s -e %s' % (app_name, all_vars)

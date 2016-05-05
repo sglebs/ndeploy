@@ -11,7 +11,14 @@ It is bare bones for now. Personal use.
 # Pre-requisites
 
 You need the CLI versions of each PaaS already installed:
- * dokku in the case of dokku
+
+ * dokku : https://github.com/dokku/dokku
+ 
+  * redis plugin: https://github.com/dokku/dokku-redis
+  * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container
+  * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq
+  * mongo plugin: https://github.com/dokku/dokku-mongo
+   
  * oc in the case of openshift origin
  
 You need the PaaS already installed. You probably want to start with them under Vagrant on your PC. For each one of them, you want the plugins installed (PostgreSQL, RabbitMQ, etc).

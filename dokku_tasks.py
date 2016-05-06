@@ -232,18 +232,43 @@ def dokku_inject_redis_service_if_needed(options, repo_url, app_name):
         os.system(cmd)
         #os.system("ssh dokku@%s redis:promote %s %s" % (get_deploy_host(options), service_name, app_name))
 
+def get_dokku_app_host(options, app_name):
+    return "%s.%s" % (app_name, get_expose_host(options))
+
+def dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name):
+    requirements_app = "%s/requirements.app" % get_repo_full_path(repo_url)
+    for line in templated_file_lines_iterator(options, requirements_app):
+        required_app_repo_dir_name = line.strip()
+        required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)
+        if required_app_name is None:
+            print("\n*** SEVERE WARNING: Configuring %s , "
+                  "'%s' is listed as requirement but no app was deployed for this dir/git" %
+                  (app_name, required_app_repo_dir_name))
+            print(" \t Mapping: %s" % app_names_by_repo_dir_name)
+            continue  # TO DO: Generate warmning? Halt teh deploy?
+        required_app_url = "http://%s" % get_dokku_app_host(options, required_app_name)
+        cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
+                (get_deploy_host(options),
+                 app_name,
+                 required_app_repo_dir_name.upper().replace("-", "_"),
+                 required_app_url)
+        print("...Configuring required app for %s: %s" % (app_name, cmd))
+        os.system(cmd)
 
 @task
 @needs(['dokku_create_empty_apps', 'dokku_start_postgres'])
 def dokku_create_configured_apps(options):
+    app_names_by_repo_dir_name = {}
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
+        app_names_by_repo_dir_name[dir_name_for_repo(repo_url)] = app_name
         dokku_set_docker_options_if_needed(options, repo_url, app_name)
         dokku_create_database_if_needed(options, repo_url, app_name)
         dokku_create_mongo_if_needed(options, repo_url, app_name)
         dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name)
         dokku_inject_redis_service_if_needed(options, repo_url, app_name)
         dokku_create_apps_env_vars_if_needed(options, repo_url, app_name)  # env vars AFTER because some slam DATABASE_URL
-
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
+        dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name)
 
 @task
 def dokku_just_deploy(options):

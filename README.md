@@ -14,7 +14,7 @@ You need the CLI versions of each PaaS already installed:
 
  * dokku : https://github.com/dokku/dokku
  
-  * redis plugin: https://github.com/dokku/dokku-redis
+  * redis plugin: https://github.com/dokku/dokku-redis (for now our fork https://github.com/sglebs/dokku-redis )
   * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container
   * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq
   * mongo plugin: https://github.com/dokku/dokku-mongo
@@ -52,16 +52,25 @@ LOGLEVEL=DEBUG
    ```
    financial-platform,5672,5673,15672,15673
    ```
-   * *.txt files with the names of the apps, and inside this file the name of the RabbitMQ service needed (form services.txt). Example: core-server.txt as below:
+   * *.txt files with the names of the apps, and inside this file the name of the RabbitMQ service needed (from services.txt).  This will inject the env var RABBITMQ_URL in your app. Example: core-server.txt as below:
    ```
    financial-platform
    ```
    * *.json files with the names of the apps, and inside this file the configuration of RabbitMQ
+ * redis : a directory with:
+   * A services.txt file, where each line lists the name of the (redis) service. Example:
+   ```
+   redis-photos-cache
+   ```
+   * *.txt files with the names of the apps, and inside this file the name of the Redis service needed (from services.txt). This will inject the env var REDIS_URL in your app. Example: core-server.txt as below:
+   ```
+   redis-photos-cache
+   ```
  * openshift_templates : Optional *.txt files with the names of the apps, and inside this file the custom parameters to "oc new-app" if you need to override somehow. You can use templated variable. Example:
  ```
  python:3.5 --name={appname} {repourl}#{branch} -l app={appname}
  ```
- * dokku_docker-options: Optional *.txt files with the names of the apps, and inside this file the custom parameters to docker-options, with the syntx phase=options. Example:
+ * dokku_docker-options: Optional *.txt files with the names of the apps, and inside this file the custom parameters to docker-options, with the syntax phase=options. Example:
 ```
 run=-m 128m
 ```

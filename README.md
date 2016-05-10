@@ -14,7 +14,7 @@ You need the CLI versions of each PaaS already installed:
 
  * dokku : https://github.com/dokku/dokku
  
-  * redis plugin: https://github.com/dokku/dokku-redis (for now our fork https://github.com/sglebs/dokku-redis )
+  * redis plugin: https://github.com/dokku/dokku-redis
   * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container
   * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq
   * mongo plugin: https://github.com/dokku/dokku-mongo

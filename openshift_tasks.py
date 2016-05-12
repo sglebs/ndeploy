@@ -15,7 +15,7 @@ _RABBITMQ_SETUP_CMD = \
 
 def get_openshift_area_name(options):
     default = getpass.getuser()
-    return options.get("area", default)
+    return options.get("area", default).replace(".", "")
 
 
 def get_openshift_template_contents(options, openshift_template_path):

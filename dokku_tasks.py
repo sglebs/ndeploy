@@ -1,9 +1,10 @@
 from core_tasks import *
 from paver.easy import task, needs
 import timeout_decorator
+#from urllib.parse import urlparse
 
 _RABBITMQ_SETUP_CMD = \
-      'curl -i -u %s:%s -H "content-type:application/json" -X POST --data @%s http://%s:15673/api/definitions'
+      'curl -i -u %s:%s -H "content-type:application/json" -X POST --data @%s http://%s:%s/api/definitions'
 
 
 def get_dokku_remote_repo_name(options):
@@ -153,8 +154,11 @@ def dokku_create_rabbitmq_services(options):
     print("------------------------------------------------------------")
     if not platform_needs_rabbitmq_as_a_service(options):
         return
+    options["_rabbitmqs_"] = {}
     for line in rabbitmqs_services_iterator(options):
-        service_name, mq_port, cluster_resolution_port, mgmt_port, cluster_comms_port = line.strip().split(",")
+        # https://github.com/dokku/dokku-rabbitmq/issues/21 lists ports: mq_port cluster_resolution cluster_comms mgmt_port
+        service_name, mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port = line.strip().split(",")
+        options["_rabbitmqs_"][service_name] = [mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port ]
         print("...Creating RabbitMQ Service %s" % service_name)
         cmd = "ssh dokku@%s rabbitmq:create %s" % (get_deploy_host(options), service_name)
         try:
@@ -168,7 +172,7 @@ def dokku_create_rabbitmq_services(options):
         print("...Exposing RabbitMQ Ports")
         # expose web port etc https://github.com/dokku/dokku-rabbitmq/issues/21
         cmd = "ssh dokku@%s rabbitmq:expose %s %s %s %s %s" % (
-            get_deploy_host(options), service_name, mq_port, cluster_resolution_port, mgmt_port, cluster_comms_port)
+            get_deploy_host(options), service_name, mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port)
         err, out = execute_program(cmd)
         if len(err) > 0 and "already exposed" not in err:
             return False
@@ -206,18 +210,21 @@ def dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name):
     original_app_name = dir_name_for_repo(repo_url)
     if not app_has_rabbitmq(options, original_app_name):
         return
-    for service_name in rabbitmqs_servicenames_iterator(options, original_app_name):
+    for service_name in rabbitmqs_services_needed_by_app_iterator(options, original_app_name):
         print("...Configuring RabbitMQ service %s for app %s" % (service_name, app_name))
         os.system("ssh dokku@%s rabbitmq:link %s %s" % (get_deploy_host(options), service_name, app_name))
         rabbitmq_config_json_path = rabbit_mq_initialization_file_path(options, original_app_name)
         if not os.path.exists(rabbitmq_config_json_path):
             continue
-        rabbit_url = get_dokku_app_env_var_value(options, app_name, "RABBITMQ_URL")
-        if len(rabbit_url) == 0:
-            print("ERROR initializing %s with the contents of %s" % (rabbit_url, rabbitmq_config_json_path))
-        print("Extracting password from %s" % rabbit_url)
-        password = rabbit_url.split(":")[2].split("@")[0]
-        cmd = _RABBITMQ_SETUP_CMD % (service_name, password, rabbitmq_config_json_path, get_deploy_host(options))
+        rabbit_url_string = get_dokku_app_env_var_value(options, app_name, "RABBITMQ_URL")
+        if len(rabbit_url_string) == 0:
+            print("ERROR initializing %s with the contents of %s" % (rabbit_url_string, rabbitmq_config_json_path))
+        print("Extracting password from %s" % rabbit_url_string)
+        #rabbit_url = urlparse(rabbit_url_string)
+        #password = rabbit_url.password
+        password = rabbit_url_string.split(":")[2].split("@")[0]
+        mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port = options["_rabbitmqs_"][service_name]
+        cmd = _RABBITMQ_SETUP_CMD % (service_name, password, rabbitmq_config_json_path, get_deploy_host(options), mgmt_port)
         print("Initializing queues: %s" % cmd)
         os.system(cmd)
 

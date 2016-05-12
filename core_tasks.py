@@ -190,7 +190,7 @@ def app_has_rabbitmq(options, original_app_dir_name):
     return os.path.exists(rabbit_mq_config_file_path(options, original_app_dir_name))
 
 
-def rabbitmqs_servicenames_iterator(options, original_app_dir_name):
+def rabbitmqs_services_needed_by_app_iterator(options, original_app_dir_name):
     for line in templated_file_lines_iterator(options, rabbit_mq_config_file_path(options, original_app_dir_name)):
         yield line.strip()
 

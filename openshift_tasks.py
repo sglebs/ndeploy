@@ -4,13 +4,13 @@ import socket
 import timeout_decorator
 import getpass
 
-RABBITMQ_PORT = 5662
-RABBITMQ_ADMIN_PORT = 15662
+#RABBITMQ_PORT = 5662
+#RABBITMQ_ADMIN_PORT = 15662
 RABBITMQ_USER = "admin"
 RABBITMQ_PASSWORD = "123456"
 
 _RABBITMQ_SETUP_CMD = \
-    'curl -i -u %s:%s -H "content-type:application/json" -X POST --data @%s http://%s:15673/api/definitions'
+    'curl -i -u %s:%s -H "content-type:application/json" -X POST --data @%s http://%s:%s/api/definitions'
 
 
 def get_openshift_area_name(options):
@@ -183,11 +183,12 @@ def openshift_inject_rabbitmq_service_if_needed(options, repo_url, app_name):
     original_app_name = dir_name_for_repo(repo_url)
     if not app_has_rabbitmq(options, original_app_name):
         return
-    for service_name in rabbitmqs_servicenames_iterator(options, original_app_name):
+    for service_name in rabbitmqs_services_needed_by_app_iterator(options, original_app_name):
+        mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port = options["_rabbitmqs_"][service_name]
         rabbit_mq_url = "amqp://{rabbitadminuser}:{rabbitadminpassword}@" \
                         "rb-{service_name}:{rabbitmqport}/{service_name}".format(
                             appname=app_name, service_name=service_name, rabbitadminuser=RABBITMQ_USER,
-                            rabbitadminpassword=RABBITMQ_PASSWORD, rabbitmqport=RABBITMQ_PORT)
+                            rabbitadminpassword=RABBITMQ_PASSWORD, rabbitmqport=mq_port)
         cmd = 'oc env dc/{appname} -e RABBITMQ_URL="{rabbitmqurl}"'.format(appname=app_name, rabbitmqurl=rabbit_mq_url)
         print("...Configuring RABBITMQ_URL for app %s : %s" % (app_name, cmd))
         os.system(cmd)
@@ -198,6 +199,7 @@ def openshift_inject_rabbitmq_service_if_needed(options, repo_url, app_name):
                                      RABBITMQ_PASSWORD,
                                      rabbitmq_config_json_path,
                                      get_openshift_app_host(options, "rb-%s" % service_name),
+                                     mgmt_port
                                      )
         print("Initializing queues: %s" % cmd)
         os.system(cmd)
@@ -267,15 +269,18 @@ def openshift_create_rabbitmq_services(options):
     if len(err) > 0 and "already exists" not in err:
         print(err)
         return False
+    options["_rabbitmqs_"] = {}
     for line in rabbitmqs_services_iterator(options):
-        service_name, mq_port, cluster_resolution_port, mgmt_port, cluster_comms_port = line.strip().split(",")
+        # https://github.com/dokku/dokku-rabbitmq/issues/21 lists ports: mq_port cluster_resolution cluster_comms mgmt_port
+        service_name, mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port= line.strip().split(",")
+        options["_rabbitmqs_"][service_name] = [mq_port, cluster_resolution_port, cluster_comms_port, mgmt_port ]
         cmd = "oc new-app {templatename} -p " \
               "RABBITMQ_SERVICE_NAME=rb-{service_name}," \
               "RABBITMQ_USER={rabbitadminuser}," \
               "RABBITMQ_PASSWORD={rabbitadminpassword} -l app=rb-{service_name}".format(
                  service_name=service_name, templatename="rabbitmq-ephemeral",
                  rabbitadminuser=RABBITMQ_USER, rabbitadminpassword=RABBITMQ_PASSWORD,
-                 rabbitmqport=RABBITMQ_PORT, rabbitmqadminport=RABBITMQ_ADMIN_PORT)
+                 rabbitmqport=mq_port, rabbitmqadminport=mgmt_port)
         print("...Creating RabbitMQ Service: %s" % cmd)
         try:
             err, out = execute_program_with_timeout(cmd)

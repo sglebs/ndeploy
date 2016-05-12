@@ -13,6 +13,14 @@ EXPOSE_HOST_PARAM_NAME = "exposehost"
 DEPLOY_SYSTEM_PARAM_NAME = "system"
 
 
+def get_repo_full_path_for_repo_dir_name(repo_dir_name):
+    repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+    return repo_full_path
+
+def get_repo_full_path_for_repo_url(repo_url):
+    return get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url))
+
+
 def get_configdir(options):
     return options.get("configdir", current_path())
 
@@ -217,6 +225,30 @@ def get_template_dir(options):
     return "%s/%s_templates" % (get_configdir(options), get_system(options))
 
 
+def procfile_path(options, original_app_dir_name):
+    return "%s/Procfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+
+
+def custom_run_script_path(options, original_app_dir_name):
+    return "%s/.s2i/bin/run" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+
+
+def app_has_custom_run_script_path(options, original_app_dir_name):
+    return os.path.exists(procfile_path(options, original_app_dir_name))
+
+
+def app_has_procfile(options, original_app_dir_name):
+    return os.path.exists(procfile_path(options, original_app_dir_name))
+
+
+def procfile_iterator(options, original_app_dir_name, **kwargs):
+    if app_has_procfile(options, original_app_dir_name) and app_has_custom_run_script_path(options, original_app_dir_name):
+        for line in templated_file_lines_iterator(options, procfile_path(options, original_app_dir_name), **kwargs):
+            label, _, cmd_line = line.strip().partition(":")
+            yield [label, cmd_line]
+    else:
+        yield ["", ""]
+
 class Progress(git.RemoteProgress):
     def line_dropped(self, line):
         print(self._cur_line)
@@ -253,27 +285,25 @@ def execute_program_with_timeout_and_print_output(cmd):
     return execute_program_and_print_output(cmd)
 
 
-def get_repo_full_path(repo_url):
-    repo_dir_name = dir_name_for_repo(repo_url)
-    repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
-    return repo_full_path
-
-
 @task
 def git_clone_all(options):
     progress = Progress()
     for repo_url, branch in repo_and_branch_iterator(options):
-        repo_full_path = get_repo_full_path(repo_url)
+        repo_full_path = get_repo_full_path_for_repo_url(repo_url)
         if os.path.exists(repo_full_path):
             print("Already cloned: %s" % repo_url)
-            continue
-        os.makedirs(repo_full_path)
-        try:
-            repo = git.Repo.clone_from(repo_url, repo_full_path, branch=branch, progress=progress)
-            print("Cloned: %s" % repo)
-        except git.GitCommandError as e:
-            print(e)
-            return False
+            repo = git.Repo(repo_full_path)
+            if repo.active_branch.name != branch:
+                print("Your local checkout is in a different branch (%s) from the branch you want to deploy (%s). Aborting: %s" % (repo.active_branch.name, branch, repo_url))
+                return False
+        else:
+            os.makedirs(repo_full_path)
+            try:
+                repo = git.Repo.clone_from(repo_url, repo_full_path, branch=branch, progress=progress)
+                print("Cloned: %s" % repo)
+            except git.GitCommandError as e:
+                print(e)
+                return False
         print("\r\n-------------------------------------------------------------\r\n")
 
 

@@ -236,7 +236,7 @@ def get_dokku_app_host(options, app_name):
     return "%s.%s" % (app_name, get_expose_host(options))
 
 def dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name):
-    requirements_app = "%s/requirements.app" % get_repo_full_path(repo_url)
+    requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url)
     for line in templated_file_lines_iterator(options, requirements_app):
         required_app_repo_dir_name = line.strip()
         required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)

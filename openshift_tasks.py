@@ -80,15 +80,17 @@ def openshift_create_empty_apps(options):
         # if app_has_procfile(options, dir_name_for_repo(repo_url)) and app_has_custom_run_script_path(options, dir_name_for_repo(repo_url)):
         #     labels_and_cmdlines = [[label, cmd_line] for label, cmd_line in procfile_iterator(options,dir_name_for_repo(repo_url))]
         for label, cmd_line in procfile_iterator(options,dir_name_for_repo(repo_url)):
+            suffix_from_label = label
             if label == "web":
-                label = ""  # default label, should not be used as suffix
+                suffix_from_label = ""  # default label, should not be used as suffix
             openshift_template_path = "%s/%s.txt" % (get_template_dir(options), dir_name_for_repo(repo_url))
-            cmd = 'oc new-app --name={appname}{procfilelabel}' \
+            cmd = 'oc new-app --name={appname}{suffixfromlabel}' \
                    ' {repourl}#{branch} -e PORT=8080' \
-                   ' -e EXEC_CMD="{cmdline}"'.format (appname=app_name,
+                   ' -e PROCFILE_TARGET={procfilelabel}'.format(appname=app_name,
                                                      repourl=get_http_repo_url(repo_url),
                                                      branch=branch,
                                                      repofullpath=get_repo_full_path_for_repo_url(repo_url),
+                                                     suffixfromlabel=suffix_from_label,
                                                      procfilelabel=label,
                                                      cmdline=cmd_line)
             if os.path.exists(openshift_template_path):
@@ -99,6 +101,7 @@ def openshift_create_empty_apps(options):
                                                                                 repourl=get_http_repo_url(repo_url),
                                                                                 branch=branch,
                                                                                 repofullpath=get_repo_full_path_for_repo_url(repo_url),
+                                                                                suffixfromlabel=suffix_from_label,
                                                                                 procfilelabel=label,
                                                                                 cmdline=cmd_line))
             print("\n\n*****Creating app %s: %s \n\n" % (app_name, cmd))
@@ -107,7 +110,7 @@ def openshift_create_empty_apps(options):
                 print(err)
             else:
                 print(out)
-            if label == "":
+            if suffix_from_label == "": #main target, exposed
                 cmd = "oc expose service/%s --hostname=%s" % (app_name, get_openshift_app_host(options, app_name))
                 print("...Creating app route for %s :  %s" % (app_name, cmd))
                 err, out = execute_program(cmd)
@@ -280,7 +283,7 @@ def openshift_create_rabbitmq_services(options):
               "RABBITMQ_PASSWORD={rabbitadminpassword} -l app=rb-{service_name}".format(
                  service_name=service_name, templatename="rabbitmq-ephemeral",
                  rabbitadminuser=RABBITMQ_USER, rabbitadminpassword=RABBITMQ_PASSWORD,
-                 rabbitmqport=mq_port, rabbitmqadminport=mgmt_port)
+                 rabbitmqport=mq_port, rabbitmqadminport=mgmt_port, rabbithostname="rb-%s-%s.%s" % (service_name, get_openshift_area_name(options), get_expose_host(options)))
         print("...Creating RabbitMQ Service: %s" % cmd)
         try:
             err, out = execute_program_with_timeout(cmd)

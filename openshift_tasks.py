@@ -61,9 +61,8 @@ def openshift_login(options):
 def openshift_create_project_area(options):
     os.system("oc new-project %s" % get_openshift_area_name(options))
     os.system("oc project %s" % get_openshift_area_name(options))
-    # now we use https
-    # os.system("oc secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa")
-    # os.system("oc secrets add serviceaccount/builder secrets/scmsecret")
+    os.system("oc secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa")
+    os.system("oc secrets add serviceaccount/builder secrets/scmsecret")
 
 
 def get_openshift_app_host(options, app_name):
@@ -110,6 +109,7 @@ def openshift_create_empty_apps(options):
                 print(err)
             else:
                 print(out)
+            os.system("oc patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (app_name,suffix_from_label))
             if suffix_from_label == "": #main target, exposed
                 cmd = "oc expose service/%s --hostname=%s" % (app_name, get_openshift_app_host(options, app_name))
                 print("...Creating app route for %s :  %s" % (app_name, cmd))

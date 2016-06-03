@@ -296,6 +296,10 @@ def git_clone_all(options):
             if repo.active_branch.name != branch:
                 print("Your local checkout is in a different branch (%s) from the branch you want to deploy (%s). Aborting: %s" % (repo.active_branch.name, branch, repo_url))
                 return False
+            else:
+                origin = repo.remotes.origin
+                origin.fetch()
+                origin.pull()
         else:
             os.makedirs(repo_full_path)
             try:

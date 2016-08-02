@@ -1,6 +1,7 @@
 from core_tasks import *
 from paver.easy import task, needs
 import timeout_decorator
+import re
 #from urllib.parse import urlparse
 
 _RABBITMQ_SETUP_CMD = \
@@ -236,6 +237,18 @@ def dokku_inject_redis_service_if_needed(options, repo_url, app_name):
     for service_name in redis_servicenames_iterator(options, original_app_name):
         cmd = "ssh dokku@%s redis:link %s %s" % (get_deploy_host(options), service_name, app_name)
         print("...Configuring Redis service %s for app %s: %s" % (service_name, app_name, cmd))
+        err, out = execute_program(cmd)
+        print(out)
+        #TODO: get URL of service and make it publicly available
+        url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        urls = re.findall(url_regex, out)
+        injected_redis_url = urls[0]
+        print("...Injecting Redis service %s url %s as env var" % (service_name, injected_redis_url))
+        cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
+                (get_deploy_host(options),
+                 app_name,
+                 service_name.upper().replace("-", "_"),
+                 injected_redis_url)
         os.system(cmd)
         #os.system("ssh dokku@%s redis:promote %s %s" % (get_deploy_host(options), service_name, app_name))
 

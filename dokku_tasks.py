@@ -236,18 +236,18 @@ def dokku_inject_redis_service_if_needed(options, repo_url, app_name):
         return
     for service_name in redis_servicenames_iterator(options, original_app_name):
         cmd = "ssh dokku@%s redis:link %s %s" % (get_deploy_host(options), service_name, app_name)
-        print("...Configuring Redis service %s for app %s: %s" % (service_name, app_name, cmd))
+        print("...Injecting Redis service %s into app %s: %s" % (service_name, app_name, cmd))
         err, out = execute_program(cmd)
         if len(err) > 0:
             print(err)
-            raise EnvironmentError ("Could not configure Redis: %s" % err)
+            raise EnvironmentError ("Could not configure Redis (link it to app %s): %s" % (app_name, err))
         else:
             print(out)
         #TODO: get URL of service and make it publicly available
         url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         urls = re.findall(url_regex, out)
         injected_redis_url = urls[0]
-        print("...Injecting Redis service %s url %s as env var" % (service_name, injected_redis_url))
+        print("...URLing Redis service %s with url %s in an env var" % (service_name, injected_redis_url))
         cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
                 (get_deploy_host(options),
                  app_name,
@@ -279,6 +279,16 @@ def dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_
         print("...Configuring required app for %s: %s" % (app_name, cmd))
         os.system(cmd)
 
+
+def dokku_configure_domains(options, repo_url, app_name):
+    original_app_name = dir_name_for_repo(repo_url)
+    if not app_has_domains(options, original_app_name):
+        return
+    domains = " ".join(domains_names_iterator(options, original_app_name))
+    cmd = "ssh dokku@%s domains:add %s %s" % (get_deploy_host(options), app_name, domains)
+    print("...Configuring domain names for app %s: %s" % (app_name, cmd))
+    os.system(cmd)
+
 @task
 @needs(['dokku_create_empty_apps', 'dokku_start_postgres'])
 def dokku_create_configured_apps(options):
@@ -291,6 +301,7 @@ def dokku_create_configured_apps(options):
         dokku_inject_rabbitmq_service_if_needed(options, repo_url, app_name)
         dokku_inject_redis_service_if_needed(options, repo_url, app_name)
         dokku_create_apps_env_vars_if_needed(options, repo_url, app_name)  # env vars AFTER because some slam DATABASE_URL
+        dokku_configure_domains(options, repo_url, app_name)
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(options):
         dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name)
 

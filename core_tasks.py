@@ -163,15 +163,23 @@ def redis_services_iterator(options):
 def redis_config_file_path(options, original_app_dir_name):
     return "%s/redis/%s.txt" % (get_configdir(options), original_app_dir_name)
 
+def domains_config_file_path(options, original_app_dir_name):
+    return "%s/domains/%s.txt" % (get_configdir(options), original_app_dir_name)
 
 def app_has_redis(options, original_app_dir_name):
     return os.path.exists(redis_config_file_path(options, original_app_dir_name))
+
+def app_has_domains(options, original_app_dir_name):
+    return os.path.exists(domains_config_file_path(options, original_app_dir_name))
 
 
 def redis_servicenames_iterator(options, original_app_dir_name):
     for line in templated_file_lines_iterator(options, redis_config_file_path(options, original_app_dir_name)):
         yield line.strip()
 
+def domains_names_iterator(options, original_app_dir_name):
+    for line in templated_file_lines_iterator(options, domains_config_file_path(options, original_app_dir_name)):
+        yield line.strip()
 
 def platform_needs_rabbitmq_as_a_service(options):
     rabbitmq_services_config_path = "%s/rabbitmqs/services.txt" % (get_configdir(options))

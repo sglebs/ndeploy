@@ -238,7 +238,11 @@ def dokku_inject_redis_service_if_needed(options, repo_url, app_name):
         cmd = "ssh dokku@%s redis:link %s %s" % (get_deploy_host(options), service_name, app_name)
         print("...Configuring Redis service %s for app %s: %s" % (service_name, app_name, cmd))
         err, out = execute_program(cmd)
-        print(out)
+        if len(err) > 0:
+            print(err)
+            raise EnvironmentError ("Could not configure Redis: %s" % err)
+        else:
+            print(out)
         #TODO: get URL of service and make it publicly available
         url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         urls = re.findall(url_regex, out)

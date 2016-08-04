@@ -192,7 +192,7 @@ def dokku_create_redis_services(options):
         print(out)
         print(err)
         if len(err) > 0 and "not resolve host" in err:
-            return False
+            raise EnvironmentError ("Could not configure Redis service %s: %s" % (service_name, err))
 
 @task
 @needs(['dokku_create_empty_apps'])
@@ -288,6 +288,15 @@ def dokku_configure_domains(options, repo_url, app_name):
     cmd = "ssh dokku@%s domains:add %s %s" % (get_deploy_host(options), app_name, domains)
     print("...Configuring domain names for app %s: %s" % (app_name, cmd))
     os.system(cmd)
+    #now ssl
+    os.system("openssl genrsa -out server.key 2048")
+    for domain_name in domains_names_iterator(options, original_app_name):
+        os.system("openssl req -new -x509 -key server.key -out server.crt -days 3650 -subj /CN=%s" % domain_name)
+        os.system("tar cvf server.tar server.crt server.key")
+        cmd = "ssh dokku@%s certs:add %s < %s" % (get_deploy_host(options), app_name, "server.tar")
+        print("...Configuring https for domain %s: %s" % (domain_name, cmd))
+        os.system(cmd)
+
 
 @task
 @needs(['dokku_create_empty_apps', 'dokku_start_postgres'])

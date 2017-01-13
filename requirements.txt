@@ -1,4 +1,2 @@
-paver
-gitpython
-Jinja2
-timeout-decorator
+--process-dependency-links
+-e .

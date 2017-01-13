@@ -1,6 +1,24 @@
 import os
 import shutil
 import git
+import timeout_decorator
+import subprocess
+import shlex
+
+
+def execute_program(cmd):
+    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    err = err.decode().strip()
+    out = out.decode().strip()
+    return err, out
+
+
+@timeout_decorator.timeout(10)
+def execute_program_with_timeout(cmd):
+    return execute_program(cmd)
+
+
 
 class Progress(git.RemoteProgress):
     def line_dropped(self, line):
@@ -63,7 +81,46 @@ def git_clone_all(config_as_dict):
             except git.GitCommandError as e:
                 print(e)
                 return False
-        print("\r\n-------------------------------------------------------------\r\n")
+
+
+def get_remote_repo_name(**kwargs):
+    return "%s_%s" % (kwargs["cloud"], kwargs["scenario"])
+
+def repo_and_branch_iterator(config_as_dict):
+    for app_name, app_props in config_as_dict.get("apps", {}).items():
+        repo_url = app_props.get("git", None)
+        repo_branch = app_props.get("branch", None)
+        yield repo_url, repo_branch
+
+
+def repo_and_branch_and_app_name_iterator(config_as_dict):
+    for app_name, app_props in config_as_dict.get("apps", {}).items():
+        repo_url = app_props.get("git", None)
+        repo_branch = app_props.get("branch", None)
+        yield repo_url, repo_branch, app_name
+
+
+# def git_clone_all(config_as_dict):
+#     progress = Progress()
+#     for repo_url, branch in repo_and_branch_iterator(config_as_dict):
+#         repo_full_path = get_repo_full_path_for_repo_url(repo_url)
+#         if os.path.exists(repo_full_path):
+#             print("Already cloned: %s" % repo_url)
+#             repo = git.Repo(repo_full_path)
+#             if repo.active_branch.name != branch:
+#                 print("Your local checkout is in a different branch (%s) from the branch you want to deploy (%s). Aborting: %s" % (repo.active_branch.name, branch, repo_url))
+#                 return False
+#         else:
+#             os.makedirs(repo_full_path)
+#             try:
+#                 repo = git.Repo.clone_from(repo_url, repo_full_path, branch=branch, progress=progress)
+#                 print("Cloned: %s" % repo)
+#             except git.GitCommandError as e:
+#                 print(e)
+#                 return False
+#         print("\r\n-------------------------------------------------------------\r\n")
+#
+#
 
 def get_deploy_host(options):
     return options.get("deployhost", "")

@@ -176,7 +176,7 @@ def dokku_configure_apps(config_as_dict, **kwargs):
         #dokku_inject_rabbitmq_service_if_needed(config_as_dict, repo_url, app_name)
         dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **kwargs)
         dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props, **kwargs)  # env vars AFTER because some slam DATABASE_URL
-        dokku_configure_domains(options, repo_url, app_name)
+        dokku_configure_domains(config_as_dict, app_name, app_props, **kwargs)
 #    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
 #        dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name)
 
@@ -187,7 +187,7 @@ def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **
         err, out = execute_program(cmd)
         if len(err) > 0:
             print(err)
-            raise EnvironmentError ("Could not configure Redis (link it to app %s): %s" % (app_name, err))
+            raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
         else:
             print(out)
         #TODO: get URL of service and make it publicly available
@@ -214,6 +214,22 @@ def dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props, **
         os.system(cmd)
     else:
         print("WARNING: NO ENV VARS for %s" % app_name)
+
+def dokku_configure_domains(config_as_dict, app_name, app_props, **kwargs):
+    if not "domains" in app_props:
+        return
+    domains = " ".join(app_props["domains"])
+    cmd = "ssh dokku@%s domains:add %s %s" % (kwargs.get("deployhost", "."), app_name, domains)
+    print("...Configuring domain names for app %s: %s" % (app_name, cmd))
+    os.system(cmd)
+    #now ssl
+    os.system("openssl genrsa -out server.key 2048")
+    for domain_name in app_props["domains"]:
+        os.system("openssl req -new -x509 -key server.key -out server.crt -days 3650 -subj /CN=%s" % domain_name)
+        os.system("tar cvf server.tar server.crt server.key")
+        cmd = "ssh dokku@%s certs:add %s < %s" % (kwargs.get("deployhost", "."), app_name, "server.tar")
+        print("...Configuring https for domain %s: %s" % (domain_name, cmd))
+        os.system(cmd)
 
 
 def dokku_set_docker_options_if_needed(app_name, app_props, **kwargs):

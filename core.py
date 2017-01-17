@@ -4,7 +4,32 @@ import git
 import timeout_decorator
 import subprocess
 import shlex
+from jinja2 import FileSystemLoader
+from jinja2.environment import Environment
 
+
+def merge_two_dicts(x, y):
+    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    result = x.copy()
+    result.update(y)
+    return result
+
+
+def templated_file_contents(config_as_dict, file_path, **kwargs):
+    if os.path.exists(file_path):
+        env = Environment()
+        env.loader = FileSystemLoader(os.path.dirname(file_path))
+        template = env.get_template(os.path.basename(file_path))
+        return template.render(merge_two_dicts(kwargs, config_as_dict))
+    else:
+        return ""
+
+
+def templated_file_lines_iterator(options, file_path, **kwargs):
+    for line in templated_file_contents(options, file_path, **kwargs).splitlines():
+        trimmed_line = line.strip()
+        if len(trimmed_line) > 0 and not line.startswith("#"):
+            yield trimmed_line
 
 def execute_program(cmd):
     p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)

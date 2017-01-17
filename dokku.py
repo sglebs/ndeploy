@@ -4,7 +4,7 @@ from core import git_rm_all, app_has_database, app_has_mongo, \
     repo_and_branch_and_app_name_iterator, get_remote_repo_name, \
     execute_program_and_print_output, Progress, \
     repo_and_branch_and_app_name_and_app_props_iterator, docker_options_iterator, \
-    app_shared_services
+    app_shared_services, get_repo_full_path_for_repo_url, templated_file_lines_iterator
 import os
 import timeout_decorator
 import git
@@ -177,8 +177,8 @@ def dokku_configure_apps(config_as_dict, **kwargs):
         dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **kwargs)
         dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props, **kwargs)  # env vars AFTER because some slam DATABASE_URL
         dokku_configure_domains(config_as_dict, app_name, app_props, **kwargs)
-#    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-#        dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name)
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name, **kwargs)
 
 def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **kwargs):
     for service_name in app_shared_services("redis", config_as_dict, app_name, app_props):
@@ -231,6 +231,28 @@ def dokku_configure_domains(config_as_dict, app_name, app_props, **kwargs):
         print("...Configuring https for domain %s: %s" % (domain_name, cmd))
         os.system(cmd)
 
+def get_dokku_app_host(app_name, **kwargs):
+    return "%s.%s" % (app_name, kwargs.get("exposehost", "."))
+
+def dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name, **kwargs):
+    requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url)
+    for line in templated_file_lines_iterator(config_as_dict, requirements_app):
+        required_app_repo_dir_name = line.strip()
+        required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)
+        if required_app_name is None:
+            print("\n*** SEVERE WARNING: Configuring %s , "
+                  "'%s' is listed as requirement but no app was deployed for this dir/git" %
+                  (app_name, required_app_repo_dir_name))
+            print(" \t Mapping: %s" % app_names_by_repo_dir_name)
+            continue  # TO DO: Generate warmning? Halt teh deploy?
+        required_app_url = "http://%s" % get_dokku_app_host(required_app_name, **kwargs)
+        cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
+                (kwargs.get("deployhost", "."),
+                 app_name,
+                 required_app_repo_dir_name.upper().replace("-", "_"),
+                 required_app_url)
+        print("...Configuring required app for %s: %s" % (app_name, cmd))
+        os.system(cmd)
 
 def dokku_set_docker_options_if_needed(app_name, app_props, **kwargs):
     for phase, phase_options in docker_options_iterator(app_props):

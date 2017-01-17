@@ -1,10 +1,15 @@
 from core import git_rm_all, app_has_database, app_has_mongo, \
     shared_services, execute_program_with_timeout, execute_program, \
     dir_name_for_repo, current_parent_path, git_clone_all, \
-    repo_and_branch_and_app_name_iterator, get_remote_repo_name
+    repo_and_branch_and_app_name_iterator, get_remote_repo_name, \
+    execute_program_and_print_output, Progress, \
+    repo_and_branch_and_app_name_and_app_props_iterator, docker_options_iterator, \
+    app_shared_services
 import os
 import timeout_decorator
 import git
+import re
+
 
 def clean(config_as_dict, **kwargs):
     undeploy(config_as_dict, **kwargs)
@@ -12,13 +17,15 @@ def clean(config_as_dict, **kwargs):
 
 
 def deploy(config_as_dict, **kwargs):
-    #@needs(['dokku_create_rabbitmq_services', 'dokku_create_redis_services', 'dokku_remote_git_add',
-    #        'dokku_create_configured_apps', 'dokku_just_deploy'])
     git_clone_all(config_as_dict)
     dokku_remote_git_add(config_as_dict, **kwargs)
+    dokku_create_empty_apps(config_as_dict, **kwargs)
+    dokku_start_postgres(config_as_dict, **kwargs)
+    dokku_create_databases(config_as_dict, **kwargs)
     dokku_create_rabbitmq_services(config_as_dict, **kwargs)
     dokku_create_redis_services(config_as_dict, **kwargs)
-
+    dokku_configure_apps(config_as_dict, **kwargs)
+    dokku_just_deploy(config_as_dict, **kwargs)
 
 def undeploy(config_as_dict, **kwargs):
     for app_name, app_props in config_as_dict.get("apps", {}).items():
@@ -115,3 +122,104 @@ def dokku_create_redis_services(config_as_dict, **kwargs):
         print(err)
         if len(err) > 0 and "not resolve host" in err:
             raise EnvironmentError("Could not configure Redis service %s: %s" % (service_name, err))
+
+def dokku_create_empty_apps(config_as_dict, **kwargs):
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        cmd = "ssh dokku@%s apps:create %s" % (kwargs.get("deployhost", "."), app_name)
+        err, out = execute_program(cmd)
+        if len(err) > 0 and 'already taken' not in err:  # some other error
+            print(err)
+            return False
+        else:
+            print(out)
+
+
+def dokku_start_postgres(config_as_dict, **kwargs):
+    cmd = "ssh dokku@%s psql:start" % (kwargs.get("deployhost", "."))
+    print("...Starting database service:  %s" % cmd)
+    execute_program_and_print_output(cmd)
+
+
+def dokku_create_databases(config_as_dict, **kwargs):
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        if not app_has_database(config_as_dict, app_name, app_props):
+            continue
+        print("...Configuring database for %s" % app_name)
+        cmd = "ssh dokku@%s psql:create %s" % (kwargs.get("deployhost", "."), app_name)
+        ok = execute_program_and_print_output(cmd)
+        if not ok:
+            return False
+
+
+def dokku_just_deploy(config_as_dict, **kwargs):
+    progress = Progress()
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        repo_dir_name = dir_name_for_repo(repo_url)
+        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+        repo = git.Repo(repo_full_path)
+        dokku_remote = repo.remote(get_remote_repo_name(**kwargs))
+        ref_spec = "%s:%s" % (branch, "master")
+        push_infos = dokku_remote.push(ref_spec, progress=progress)
+        push_info = push_infos[0]
+        print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
+        if push_info.flags & 16:  # remote push rejected
+            # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
+            print("...Failed dokku push for %s (%s)" % (app_name, repo_dir_name))
+            return False
+
+
+def dokku_configure_apps(config_as_dict, **kwargs):
+    app_names_by_repo_dir_name = {}
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        app_names_by_repo_dir_name[dir_name_for_repo(repo_url)] = app_name
+        dokku_set_docker_options_if_needed(app_name, app_props, **kwargs)
+        #dokku_inject_rabbitmq_service_if_needed(config_as_dict, repo_url, app_name)
+        dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **kwargs)
+        dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props, **kwargs)  # env vars AFTER because some slam DATABASE_URL
+        dokku_configure_domains(options, repo_url, app_name)
+#    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+#        dokku_inject_requiremets_app(options, repo_url, app_name, app_names_by_repo_dir_name)
+
+def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props, **kwargs):
+    for service_name in app_shared_services("redis", config_as_dict, app_name, app_props):
+        cmd = "ssh dokku@%s redis:link %s %s" % (kwargs.get("deployhost", "."), service_name, app_name)
+        print("...Injecting Redis service %s into app %s: %s" % (service_name, app_name, cmd))
+        err, out = execute_program(cmd)
+        if len(err) > 0:
+            print(err)
+            raise EnvironmentError ("Could not configure Redis (link it to app %s): %s" % (app_name, err))
+        else:
+            print(out)
+        #TODO: get URL of service and make it publicly available
+        url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        urls = re.findall(url_regex, out)
+        injected_redis_url = urls[0]
+        print("...URLing Redis service %s with url %s in an env var" % (service_name, injected_redis_url))
+        cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
+                (kwargs.get("deployhost", "."),
+                 app_name,
+                 service_name.upper().replace("-", "_"),
+                 injected_redis_url)
+        os.system(cmd)
+        #os.system("ssh dokku@%s redis:promote %s %s" % (get_deploy_host(options), service_name, app_name))
+
+def dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props, **kwargs):
+    if "envs" in app_props:
+        print("...Configuring env vars for %s" % app_name)
+        key_values = ['%s="%s"' % (key, str(value).replace(" ", "\\ ").replace('"', '\\"')) for key, value in
+                      app_props["envs"].items()]
+        all_vars = " ".join(key_values)
+        cmd = "ssh dokku@%s config:set --no-restart %s %s" % (kwargs.get("deployhost", "."), app_name, all_vars)
+        print(cmd)
+        os.system(cmd)
+    else:
+        print("WARNING: NO ENV VARS for %s" % app_name)
+
+
+def dokku_set_docker_options_if_needed(app_name, app_props, **kwargs):
+    for phase, phase_options in docker_options_iterator(app_props):
+        cmd = 'ssh dokku@%s docker-options:add %s %s "%s"' % (
+            kwargs.get("deployhost", "."), app_name, phase, phase_options)
+        print(cmd)
+        os.system(cmd)
+

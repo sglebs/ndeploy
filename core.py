@@ -19,6 +19,15 @@ def execute_program_with_timeout(cmd):
     return execute_program(cmd)
 
 
+def execute_program_and_print_output(cmd):
+    err, out = execute_program(cmd)
+    if len(err) > 0:
+        print(err)
+        return False
+    else:
+        print(out)
+        return True
+
 
 class Progress(git.RemoteProgress):
     def line_dropped(self, line):
@@ -87,17 +96,19 @@ def get_remote_repo_name(**kwargs):
     return "%s_%s" % (kwargs["cloud"], kwargs["scenario"])
 
 def repo_and_branch_iterator(config_as_dict):
-    for app_name, app_props in config_as_dict.get("apps", {}).items():
-        repo_url = app_props.get("git", None)
-        repo_branch = app_props.get("branch", None)
+    for repo_url, repo_branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         yield repo_url, repo_branch
 
 
 def repo_and_branch_and_app_name_iterator(config_as_dict):
+    for repo_url, repo_branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        yield repo_url, repo_branch, app_name
+
+def repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
     for app_name, app_props in config_as_dict.get("apps", {}).items():
         repo_url = app_props.get("git", None)
         repo_branch = app_props.get("branch", None)
-        yield repo_url, repo_branch, app_name
+        yield repo_url, repo_branch, app_name, app_props
 
 
 # def git_clone_all(config_as_dict):
@@ -147,3 +158,8 @@ def app_has_database(config_as_dict, app_name, app_props):
 def app_has_mongo(config_as_dict, app_name, app_props):
     return app_has_shared_service("mongo", config_as_dict, app_name, app_props)
 
+def docker_options_iterator(app_props):
+    all_options = app_props.get("paas_tweaks",{}).get("dokku-docker-options")
+    for line in all_options:
+        key, _, value = line.partition(":")
+        yield [key.strip(), value.strip()]

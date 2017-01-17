@@ -65,4 +65,4 @@ cli.add_command(deploy)
 cli.add_command(undeploy)
 
 if __name__ == '__main__':
-    undeploy()
+    deploy()

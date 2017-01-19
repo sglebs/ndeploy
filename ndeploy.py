@@ -58,11 +58,6 @@ def undeploy(**kwargs):
 
 
 @click.group()
-# @click.argument('cfgfile', type=click.File('r'))
-# @click.option('--cloud', default='dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etc')
-# @click.option('--deployhost', default='127.0.0.1', help='Host where to push the code to')
-# @click.option('--exposehost', default='127.0.0.1.nip.io', help='Public name that will form the URL of the exposed microservices')
-# @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
 def cli(**kwargs):
     """Start point for ndeploy."""
     pass

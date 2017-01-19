@@ -4,7 +4,8 @@ import toml
 import importlib
 from jinja2 import BaseLoader
 from jinja2.environment import Environment
-
+import getpass
+from core import merge_two_dicts
 
 def templated_file_contents(options, configfile):
     env = Environment(loader=BaseLoader)
@@ -14,7 +15,7 @@ def templated_file_contents(options, configfile):
 
 @functools.lru_cache(maxsize=2)
 def config_file_as_dict(**kwargs):
-    return toml.loads(templated_file_contents(kwargs, kwargs["cfgfile"]))
+    return merge_two_dicts(kwargs, toml.loads(templated_file_contents(kwargs, kwargs["cfgfile"])))
 
 
 @click.command()
@@ -23,9 +24,10 @@ def config_file_as_dict(**kwargs):
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
+@click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
 def clean(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.clean(config_file_as_dict(**kwargs), **kwargs)
+    cloud_module.clean(config_file_as_dict(**kwargs))
 
 
 @click.command()
@@ -34,9 +36,10 @@ def clean(**kwargs):
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
+@click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
 def deploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.deploy(config_file_as_dict(**kwargs), **kwargs)
+    cloud_module.deploy(config_file_as_dict(**kwargs))
 
 
 @click.command()
@@ -45,9 +48,10 @@ def deploy(**kwargs):
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
+@click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
 def undeploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.undeploy(config_file_as_dict(**kwargs), **kwargs)
+    cloud_module.undeploy(config_file_as_dict(**kwargs))
 
 
 @click.group()

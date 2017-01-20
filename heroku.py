@@ -1,5 +1,5 @@
 from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_push, \
-    shared_services, execute_program, dir_name_for_repo, \
+    shared_services, app_has_redis, dir_name_for_repo, \
     git_clone_all, \
     repo_and_branch_and_app_name_iterator, \
     execute_program_and_print_output, \
@@ -26,7 +26,7 @@ def deploy(config_as_dict):
     heroku_remote_git_add(config_as_dict)
     heroku_create_empty_apps(config_as_dict)
     heroku_create_databases(config_as_dict)
-    #heroku_create_redis_services(config_as_dict)
+    heroku_create_redis(config_as_dict)
     heroku_configure_apps(config_as_dict)
     deploy_via_git_push(config_as_dict)
 
@@ -59,17 +59,15 @@ def heroku_create_databases(config_as_dict):
         print("Configuring database for %s" % app_name)
         cmd = "%s addons:create heroku-postgresql:hobby-dev -a %s" % (get_cli_command(config_as_dict), app_name)
         ok = execute_program_and_print_output(cmd)
-        if not ok:
-            return False
 
-
-def heroku_create_redis_services(config_as_dict):
-    for service_name in shared_services("redis", config_as_dict):
-        cmd = "%s addons:create heroku-redis:hobby-dev %s" % (get_cli_command(config_as_dict), service_name)
-        print("...Creating Redis Service %s: %s" % (service_name, cmd))
+def heroku_create_redis(config_as_dict):
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        if not app_has_redis(config_as_dict, app_name, app_props):
+            continue
+        print("Configuring redis for %s" % app_name)
+        cmd = "%s addons:create heroku-redis:hobby-dev -a %s" % (get_cli_command(config_as_dict), app_name)
         ok = execute_program_and_print_output(cmd)
-        if not ok:
-            return False
+
 
 def heroku_configure_apps(config_as_dict):
     app_names_by_repo_dir_name = {}

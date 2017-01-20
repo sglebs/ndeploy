@@ -218,3 +218,20 @@ def docker_options_iterator(app_props):
     for line in all_options:
         key, _, value = line.partition(":")
         yield [key.strip(), value.strip()]
+
+
+def deploy_via_git_push(config_as_dict):
+    progress = Progress()
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        repo_dir_name = dir_name_for_repo(repo_url)
+        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+        repo = git.Repo(repo_full_path)
+        dokku_remote = repo.remote(get_remote_repo_name(config_as_dict))
+        ref_spec = "%s:%s" % (branch, "master")
+        push_infos = dokku_remote.push(ref_spec, progress=progress)
+        push_info = push_infos[0]
+        print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
+        if push_info.flags & 16:  # remote push rejected
+            # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
+            print("...Failed push for %s (%s)" % (app_name, repo_dir_name))
+            return False

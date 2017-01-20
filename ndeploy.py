@@ -1,6 +1,6 @@
 import click
 import functools
-import toml, json
+import toml, json, yaml
 import importlib
 from jinja2 import BaseLoader
 from jinja2.environment import Environment
@@ -23,7 +23,7 @@ def config_file_as_dict(**kwargs):
     elif cfgfile.name.endswith(".toml"):
         cfgdata = toml.loads(cfgfile_contents)
     elif cfgfile.name.endswith(".yaml"):
-        cfgdata = toml.loads(cfgfile_contents)
+        cfgdata = yaml.load(cfgfile_contents)
     else:
         raise ValueError("Invalid config file format")
     return merge_two_dicts(kwargs, cfgdata)

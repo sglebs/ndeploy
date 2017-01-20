@@ -213,6 +213,10 @@ def app_has_mongo(config_as_dict, app_name, app_props):
     return app_has_shared_service("mongo", config_as_dict, app_name, app_props)
 
 
+def app_has_redis(config_as_dict, app_name, app_props):
+    return app_has_shared_service("redis", config_as_dict, app_name, app_props)
+
+
 def docker_options_iterator(app_props):
     all_options = app_props.get("paas_tweaks", {}).get("dokku-docker-options")
     for line in all_options:
@@ -234,5 +238,4 @@ def deploy_via_git_push(config_as_dict):
         print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
         if push_info.flags & 16:  # remote push rejected
             # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
-            print("...Failed push for %s (%s)" % (app_name, repo_dir_name))
-            return False
+            print("Failed push for %s (%s)" % (app_name, repo_dir_name))

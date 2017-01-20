@@ -24,7 +24,7 @@ def undeploy(config_as_dict):
             if label == "web":
                 label = ""  # default label, should not be used as suffix
             print("...Removing app %s%s" % (app_name, label))
-            os.system("%s delete all -l app=%s%s" % (config_as_dict["openshift_cli"],app_name, label))
+            os.system("%s delete all -l app=%s%s" % (get_cli_command(config_as_dict),app_name, label))
         openshift_rm_database_if_needed(config_as_dict, repo_url, app_name, app_props)
     #    openshift_rm_mongo_if_needed(config_as_dict, repo_url, app_name)
     #openshift_rm_rabbitmq_if_needed(config_as_dict)
@@ -37,11 +37,16 @@ def deploy(config_as_dict):
     openshift_configure_created_apps(config_as_dict)
 
 
+# ------------------------------------------------------------
+
+def get_cli_command(config_as_dict):
+    return "%s/oc" % config_as_dict["cli_dir"]
+
 def openshift_create_project_area(config_as_dict):
-    os.system("%s new-project %s" % (config_as_dict["openshift_cli"], get_openshift_area_name(config_as_dict)))
-    os.system("%s project %s" % (config_as_dict["openshift_cli"], get_openshift_area_name(config_as_dict)))
-    os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % config_as_dict["openshift_cli"])
-    os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % config_as_dict["openshift_cli"])
+    os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
+    os.system("%s project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
+    os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict))
+    os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % get_cli_command(config_as_dict))
 
 def openshift_create_empty_apps(config_as_dict):
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
@@ -54,7 +59,7 @@ def openshift_create_empty_apps(config_as_dict):
                 suffix_from_label = ""  # default label, should not be used as suffix
             cmd = '{cli} new-app --name={appname}{suffixfromlabel}' \
                    ' {repourl}#{branch} -e PORT=8080' \
-                   ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=config_as_dict["openshift_cli"], appname=app_name,
+                   ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=get_cli_command(config_as_dict), appname=app_name,
                                                      repourl=get_http_repo_url(repo_url),
                                                      branch=branch,
                                                      repofullpath=get_repo_full_path_for_repo_url(repo_url),
@@ -64,7 +69,7 @@ def openshift_create_empty_apps(config_as_dict):
             if "openshift-template" in app_props.get("paas_tweaks", {}):
                 openshift_template_contents = app_props["paas_tweaks"]["openshift-template"]
                 if len(openshift_template_contents.strip()) > 0:
-                    cmd = "%s new-app %s" % (config_as_dict["openshift_cli"], openshift_template_contents.format(template=openshift_template_contents,
+                    cmd = "%s new-app %s" % (get_cli_command(config_as_dict), openshift_template_contents.format(template=openshift_template_contents,
                                                                                 appname=app_name,
                                                                                 repourl=get_http_repo_url(repo_url),
                                                                                 branch=branch,
@@ -78,9 +83,9 @@ def openshift_create_empty_apps(config_as_dict):
                 print(err)
             else:
                 print(out)
-            os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (config_as_dict["openshift_cli"], app_name,suffix_from_label))
+            os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label))
             if suffix_from_label == "": #main target, exposed
-                cmd = "%s expose service/%s --hostname=%s" % (config_as_dict["openshift_cli"], app_name, get_openshift_app_host(config_as_dict, app_name))
+                cmd = "%s expose service/%s --hostname=%s" % (get_cli_command(config_as_dict), app_name, get_openshift_app_host(config_as_dict, app_name))
                 print("...Creating app route for %s :  %s" % (app_name, cmd))
                 err, out = execute_program(cmd)
                 if len(err) > 0:  # some other error
@@ -118,7 +123,7 @@ def openshift_inject_requiremets_app(config_as_dict, repo_url, app_name, app_nam
             continue  # TO DO: Generate warmning? Halt teh deploy?
         required_app_url = "https://%s" % get_openshift_app_host(config_as_dict, required_app_name)
         cmd = '%s env dc/%s -e %s_URL=%s' % \
-              (config_as_dict["openshift_cli"], app_name, required_app_repo_dir_name.upper().replace("-", "_"), required_app_url)
+              (get_cli_command(config_as_dict), app_name, required_app_repo_dir_name.upper().replace("-", "_"), required_app_url)
         print("...Configuring required app for %s: %s" % (app_name, cmd))
         os.system(cmd)
 
@@ -132,7 +137,7 @@ def openshift_create_apps_env_vars_if_needed(config_as_dict, repo_url, app_name,
                 if label == "web":
                     label = ""  # default label, should not be used as suffix
                 all_vars = " ".join(key_values)
-                cmd = '%s env dc/%s%s -e %s' % (config_as_dict["openshift_cli"], app_name, label, all_vars)
+                cmd = '%s env dc/%s%s -e %s' % (get_cli_command(config_as_dict), app_name, label, all_vars)
                 print("\n\n\n**** Configuring env vars for %s%s: %s \n" % (app_name, label, cmd))
                 os.system(cmd)
         else:
@@ -149,7 +154,7 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
           "-e POSTGRESQL_DATABASE=db_{dbname} " \
           "-e POSTGRESQL_USER=user_{dbname} " \
           "-e POSTGRESQL_PASSWORD=pass_{dbname} " \
-          "-e POSTGRESQL_ADMIN_PASSWORD=admin_{dbname}".format(cli=config_as_dict["openshift_cli"], shortenedappname=get_openshift_short_app_name(app_name),
+          "-e POSTGRESQL_ADMIN_PASSWORD=admin_{dbname}".format(cli=get_cli_command(config_as_dict), shortenedappname=get_openshift_short_app_name(app_name),
                                                                dbname=get_openshift_db_name_from_app_name(app_name))
     print("...Configuring database for %s :  %s " % (app_name, cmd))
     ok = execute_program_and_print_output(cmd)
@@ -160,7 +165,7 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
         dbname=get_openshift_db_name_from_app_name(app_name),
         deployhost=config_as_dict.get("deployhost", "."))
     print("...Setting DATABASE_URL=%s   in %s" % (db_url, app_name))
-    cmd = '%s env dc/%s -e DATABASE_URL=%s' % (config_as_dict["openshift_cli"], app_name, db_url)
+    cmd = '%s env dc/%s -e DATABASE_URL=%s' % (get_cli_command(config_as_dict), app_name, db_url)
     ok = execute_program_and_print_output(cmd)
     if not ok:
         return False
@@ -189,7 +194,7 @@ def get_openshift_db_name_from_app_name(app_name):
 
 
 def openshift_login(config_as_dict):
-    cmd = "%s whoami" % config_as_dict["openshift_cli"]
+    cmd = "%s whoami" % get_cli_command(config_as_dict)
     needs_login = True
     attempts = 0
     while needs_login:
@@ -209,7 +214,7 @@ def openshift_login(config_as_dict):
         if needs_login:
             # login has to be by IP because of teh https/ssl signed certificate
             ip = socket.gethostbyname(config_as_dict.get("deployhost", "."))
-            os.system("%s login https://%s:8443" % (config_as_dict["openshift_cli"], ip))
+            os.system("%s login https://%s:8443" % (get_cli_command(config_as_dict), ip))
 
 
 def openshift_rm_database_if_needed(config_as_dict, repo_url, app_name, app_props):
@@ -217,7 +222,7 @@ def openshift_rm_database_if_needed(config_as_dict, repo_url, app_name, app_prop
     if not app_has_database(config_as_dict, original_app_name, app_props):
         return
     print("...Removing database for %s." % app_name)
-    cmd = "%s delete all -l app=pg-%s" % (config_as_dict["openshift_cli"], get_openshift_short_app_name(app_name))
+    cmd = "%s delete all -l app=pg-%s" % (get_cli_command(config_as_dict), get_openshift_short_app_name(app_name))
     ok = execute_program_and_print_output(cmd)
     if not ok:
         return False #FIXME : exceptions?

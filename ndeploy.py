@@ -25,7 +25,7 @@ def config_file_as_dict(**kwargs):
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
 @click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
-@click.option('--openshift_cli', default='/usr/local/bin/oc', help='Path to the openshift cli, oc')
+@click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def clean(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
     cloud_module.clean(config_file_as_dict(**kwargs))
@@ -38,7 +38,7 @@ def clean(**kwargs):
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
 @click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
-@click.option('--openshift_cli', default='/usr/local/bin/oc', help='Path to the openshift cli, oc')
+@click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def deploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
     cloud_module.deploy(config_file_as_dict(**kwargs))
@@ -51,7 +51,7 @@ def deploy(**kwargs):
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
 @click.option('--area', default=getpass.getuser(), help='Name of the area (workspace?) in the cloud/paas you are using')
-@click.option('--openshift_cli', default='/usr/local/bin/oc', help='Path to the openshift cli, oc')
+@click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def undeploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
     cloud_module.undeploy(config_file_as_dict(**kwargs))

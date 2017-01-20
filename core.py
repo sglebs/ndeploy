@@ -8,6 +8,23 @@ from jinja2 import FileSystemLoader
 from jinja2.environment import Environment
 
 
+def remote_git_add(config_as_dict, url_template, host):
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        repo_dir_name = dir_name_for_repo(repo_url)
+        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+        repo = git.Repo(repo_full_path)
+        git_remote = url_template.format(host=host, app_name=app_name)
+        gitremote_repo_name = get_remote_repo_name(config_as_dict)
+        remote_names = [remote.name for remote in repo.remotes]
+        remote_urls = [remote.url for remote in repo.remotes]
+        if git_remote in remote_urls:
+            print("Already in remote: %s" % git_remote)
+            continue
+        if gitremote_repo_name in remote_names:
+            repo.delete_remote(gitremote_repo_name)
+        print("Adding remote '%s' for %s" % (gitremote_repo_name, git_remote))
+        repo.create_remote(get_remote_repo_name(config_as_dict), git_remote)
+
 def merge_two_dicts(x, y):
     """Given two dicts, merge them into a new dict as a shallow copy."""
     result = x.copy()

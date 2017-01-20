@@ -1,4 +1,4 @@
-from core import git_rm_all, app_has_database, app_has_mongo, \
+from core import git_rm_all, remote_git_add, app_has_database, app_has_mongo, \
     shared_services, execute_program_with_timeout, execute_program, \
     dir_name_for_repo, current_parent_path, git_clone_all, \
     repo_and_branch_and_app_name_iterator, get_remote_repo_name, \
@@ -39,22 +39,7 @@ def undeploy(config_as_dict):
 # ----------------------------------------------------------------
 
 def dokku_remote_git_add(config_as_dict):
-    host = config_as_dict.get("deployhost", ".")
-    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-        repo_dir_name = dir_name_for_repo(repo_url)
-        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
-        repo = git.Repo(repo_full_path)
-        dokku_remote = "dokku@%s:%s" % (host, app_name)
-        dokku_remote_repo_name = get_remote_repo_name(config_as_dict)
-        remote_names = [remote.name for remote in repo.remotes]
-        remote_urls = [remote.url for remote in repo.remotes]
-        if dokku_remote in remote_urls:
-            print("Already in remote: %s" % dokku_remote)
-            continue
-        if dokku_remote_repo_name in remote_names:
-            repo.delete_remote(dokku_remote_repo_name)
-        print("Adding remote '%s' for %s" % (dokku_remote_repo_name, dokku_remote))
-        repo.create_remote(get_remote_repo_name(config_as_dict), dokku_remote)
+    remote_git_add(config_as_dict, "dokku@{host}:{app_name}", config_as_dict.get("deployhost", "."))
 
 
 def dokku_rm_database_if_needed(config_as_dict, app_name, app_props):

@@ -1,6 +1,6 @@
 import click
 import functools
-import toml
+import toml, json
 import importlib
 from jinja2 import BaseLoader
 from jinja2.environment import Environment
@@ -15,7 +15,18 @@ def templated_file_contents(options, configfile):
 
 @functools.lru_cache(maxsize=2)
 def config_file_as_dict(**kwargs):
-    return merge_two_dicts(kwargs, toml.loads(templated_file_contents(kwargs, kwargs["cfgfile"])))
+    cfgfile = kwargs["cfgfile"]
+    cfgfile_contents = templated_file_contents(kwargs, kwargs["cfgfile"])
+    cfg_data = {}
+    if cfgfile.name.endswith(".json"):
+        cfgdata = json.loads(cfgfile_contents)
+    elif cfgfile.name.endswith(".toml"):
+        cfgdata = toml.loads(cfgfile_contents)
+    elif cfgfile.name.endswith(".yaml"):
+        cfgdata = toml.loads(cfgfile_contents)
+    else:
+        raise ValueError("Invalid config file format")
+    return merge_two_dicts(kwargs, cfgdata)
 
 
 @click.command()

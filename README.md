@@ -1,7 +1,7 @@
 # ndeploy
 scripts to deploy N microservices (a "solution") to N PaaS, with a focus on development. 
-Using a .toml file you define all shared services (redis, etc) and your microsrvices to
-be dployed.
+Using a config file as input (yaml, json or toml) you define all shared services (redis, etc) 
+and your microsrvices to be dployed.
 
 It is basic and fragile for now. Start-up use.
 
@@ -33,8 +33,8 @@ You need the PaaS already installed. You probably want to start with them under 
 
 # How to configure your project
 
-You need to build a .toml file describing your solution. This file can be templated,
-with values passed in at the command-line.
+You need to build a config file describing your solution. It can be yaml, json or toml.
+This file can be templated, with values passed in at the command-line.
 
 Here is a simplified solution file in .toml format for a real deploy based on 2 microservices
 in python which use celery, redis and postgres. For the live deploy, an existing AMAZON RDS 

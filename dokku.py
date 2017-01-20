@@ -1,14 +1,14 @@
+import os
+import re
+
+import timeout_decorator
+
 from core import git_rm_all, remote_git_add, app_has_database, app_has_mongo, \
     shared_services, execute_program_with_timeout, execute_program, \
-    dir_name_for_repo, current_parent_path, git_clone_all, \
-    repo_and_branch_and_app_name_iterator, get_remote_repo_name, \
-    execute_program_and_print_output, Progress, \
+    dir_name_for_repo, git_clone_all, \
+    repo_and_branch_and_app_name_iterator, execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator, docker_options_iterator, \
-    app_shared_services, get_repo_full_path_for_repo_url, templated_file_lines_iterator
-import os
-import timeout_decorator
-import git
-import re
+    app_shared_services, get_repo_full_path_for_repo_url, templated_file_lines_iterator, deploy_via_git_push
 
 
 def clean(config_as_dict):
@@ -25,7 +25,7 @@ def deploy(config_as_dict):
     dokku_create_rabbitmq_services(config_as_dict)
     dokku_create_redis_services(config_as_dict)
     dokku_configure_apps(config_as_dict)
-    dokku_just_deploy(config_as_dict)
+    deploy_via_git_push(config_as_dict)
 
 def undeploy(config_as_dict):
     for app_name, app_props in config_as_dict.get("apps", {}).items():
@@ -136,23 +136,6 @@ def dokku_create_databases(config_as_dict):
             return False
 
 
-def dokku_just_deploy(config_as_dict):
-    progress = Progress()
-    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-        repo_dir_name = dir_name_for_repo(repo_url)
-        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
-        repo = git.Repo(repo_full_path)
-        dokku_remote = repo.remote(get_remote_repo_name(config_as_dict))
-        ref_spec = "%s:%s" % (branch, "master")
-        push_infos = dokku_remote.push(ref_spec, progress=progress)
-        push_info = push_infos[0]
-        print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
-        if push_info.flags & 16:  # remote push rejected
-            # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
-            print("...Failed dokku push for %s (%s)" % (app_name, repo_dir_name))
-            return False
-
-
 def dokku_configure_apps(config_as_dict):
     app_names_by_repo_dir_name = {}
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
@@ -162,8 +145,8 @@ def dokku_configure_apps(config_as_dict):
         dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props)
         dokku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)  # env vars AFTER because some slam DATABASE_URL
         dokku_configure_domains(config_as_dict, app_name, app_props)
-    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
-        dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name)
+    # for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+    #     dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name)
 
 def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props):
     for service_name in app_shared_services("redis", config_as_dict, app_name, app_props):
@@ -219,25 +202,25 @@ def dokku_configure_domains(config_as_dict, app_name, app_props):
 def get_dokku_app_host(config_as_dict, app_name):
     return "%s.%s" % (app_name, config_as_dict.get("exposehost", "."))
 
-def dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name):
-    requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url)
-    for line in templated_file_lines_iterator(config_as_dict, requirements_app):
-        required_app_repo_dir_name = line.strip()
-        required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)
-        if required_app_name is None:
-            print("\n*** SEVERE WARNING: Configuring %s , "
-                  "'%s' is listed as requirement but no app was deployed for this dir/git" %
-                  (app_name, required_app_repo_dir_name))
-            print(" \t Mapping: %s" % app_names_by_repo_dir_name)
-            continue  # TO DO: Generate warmning? Halt teh deploy?
-        required_app_url = "http://%s" % get_dokku_app_host(config_as_dict, required_app_name)
-        cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
-                (config_as_dict.get("deployhost", "."),
-                 app_name,
-                 required_app_repo_dir_name.upper().replace("-", "_"),
-                 required_app_url)
-        print("...Configuring required app for %s: %s" % (app_name, cmd))
-        os.system(cmd)
+# def dokku_inject_requiremets_app(config_as_dict, app_name, app_props, repo_url, app_names_by_repo_dir_name):
+#     requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url)
+#     for line in templated_file_lines_iterator(config_as_dict, requirements_app):
+#         required_app_repo_dir_name = line.strip()
+#         required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)
+#         if required_app_name is None:
+#             print("\n*** SEVERE WARNING: Configuring %s , "
+#                   "'%s' is listed as requirement but no app was deployed for this dir/git" %
+#                   (app_name, required_app_repo_dir_name))
+#             print(" \t Mapping: %s" % app_names_by_repo_dir_name)
+#             continue  # TO DO: Generate warmning? Halt teh deploy?
+#         required_app_url = "http://%s" % get_dokku_app_host(config_as_dict, required_app_name)
+#         cmd = 'ssh dokku@%s config:set --no-restart %s %s_URL="%s"' % \
+#                 (config_as_dict.get("deployhost", "."),
+#                  app_name,
+#                  required_app_repo_dir_name.upper().replace("-", "_"),
+#                  required_app_url)
+#         print("...Configuring required app for %s: %s" % (app_name, cmd))
+#         os.system(cmd)
 
 def dokku_set_docker_options_if_needed(app_name, app_props, config_as_dict):
     for phase, phase_options in docker_options_iterator(app_props):

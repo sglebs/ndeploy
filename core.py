@@ -190,6 +190,15 @@ def shared_services(shared_service_type, config_as_dict):
     return config_as_dict.get("shared_services", {}).get(shared_service_type, [])
 
 
+def apps_with_given_shared_service(shared_service_type, config_as_dict, shared_service_name):
+    result = []
+    for repo, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        app_services_used = app_props.get("services_used", [])
+        if shared_service_name in app_services_used:
+            result.append(app_name)
+    return result
+
+
 def app_shared_services(shared_service_type, config_as_dict, app_name, app_props):
     all_shared_services = shared_services(shared_service_type, config_as_dict)
     app_services = app_props.get("services_used", [])

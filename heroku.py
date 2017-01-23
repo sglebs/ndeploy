@@ -1,6 +1,6 @@
 from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_push, \
-    shared_services, app_has_redis, dir_name_for_repo, execute_program, \
-    git_clone_all, \
+    app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
+    git_clone_all, apps_with_given_shared_service, \
     repo_and_branch_and_app_name_iterator, \
     execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator
@@ -69,7 +69,6 @@ def heroku_create_redis(config_as_dict):
         print(out)
         print(err)
         cmd = "%s redis:info -a %s" % (get_cli_command(config_as_dict), app_name)
-        created = False
         redis_name_and_env_var_regex = r'===\s+(\S+)\s+[(]([^)]+)[)]'
         redis_name = ""
         redis_env_var = None
@@ -86,7 +85,18 @@ def heroku_create_redis(config_as_dict):
                 continue # wait some more (env var not created yet)
             redis_name = redis_name_and_env_var[0][0]
             redis_env_var = redis_name_and_env_var[0][1]
-        print("Created redis %s as env var %s in app %s" % (redis_name, redis_env_var, app_name))
+        cmd = "%s config:get %s -a %s" % (get_cli_command(config_as_dict), redis_env_var, app_name)
+        err, redis_env_var_value = execute_program(cmd)
+        print("Created redis %s as env var %s in app %s with value %s" % (redis_name, redis_env_var, app_name, redis_env_var_value))
+        app_shared_redis = list(app_shared_services("redis", config_as_dict, app_name, app_props))
+        if len(app_shared_redis) == 1: # we own it, so we need to propagate this env var
+            redis_url_key_name = "%s_URL" % app_shared_redis[0].upper().replace("-", "_")
+            #redis_env_var_value
+            for dependent_app in apps_with_given_shared_service("redis", config_as_dict, app_shared_redis[0]):
+                if dependent_app != app_name: # we can safely skip ourselves
+                    print("Injecting redis env var %s in dependent app %s with value %s" % (redis_url_key_name, dependent_app, redis_env_var_value))
+                    cmd = "%s config:set %s=%s -a %s" % (get_cli_command(config_as_dict), redis_url_key_name, redis_env_var_value, dependent_app)
+                    ok = execute_program_and_print_output(cmd)
 
 
 def heroku_configure_apps(config_as_dict):

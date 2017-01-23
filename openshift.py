@@ -12,6 +12,9 @@ import getpass
 import socket
 
 
+def process_args(args_as_dict):
+    return args_as_dict
+
 def clean(config_as_dict):
     undeploy(config_as_dict)
     git_rm_all(config_as_dict)

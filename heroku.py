@@ -6,22 +6,23 @@ from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_pu
     repo_and_branch_and_app_name_and_app_props_iterator
 import os
 
+def process_args(args_as_dict):
+    args_as_dict["exposehost"] = "herokuapps.com"  # override regardless of what was passed
+    args_as_dict["deployhost"] = "git.heroku.com"  # override regardless of what was passed
+    return args_as_dict
 
 def clean(config_as_dict):
-    adjust_hosts(config_as_dict)
     undeploy(config_as_dict)
     git_rm_all(config_as_dict)
 
 
 def undeploy(config_as_dict):
-    adjust_hosts(config_as_dict)
     for app_name, app_props in config_as_dict.get("apps", {}).items():
         os.system("echo %s > confirm.txt" % app_name)
         os.system("%s apps:destroy %s < confirm.txt" % (get_cli_command(config_as_dict), app_name))
 
 
 def deploy(config_as_dict):
-    adjust_hosts(config_as_dict)
     git_clone_all(config_as_dict)
     heroku_remote_git_add(config_as_dict)
     heroku_create_empty_apps(config_as_dict)
@@ -31,10 +32,6 @@ def deploy(config_as_dict):
     deploy_via_git_push(config_as_dict)
 
 # ------------------------------------------------------------
-
-def adjust_hosts(config_as_dict):
-    config_as_dict["exposehost"] = "herokuapps.com"  # override regardless of what was passed
-    config_as_dict["deployhost"] = "git.heroku.com"  # override regardless of what was passed
 
 
 def get_cli_command(config_as_dict):

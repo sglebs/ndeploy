@@ -10,6 +10,8 @@ from core import git_rm_all, remote_git_add, app_has_database, app_has_mongo, \
     repo_and_branch_and_app_name_and_app_props_iterator, docker_options_iterator, \
     app_shared_services, get_repo_full_path_for_repo_url, templated_file_lines_iterator, deploy_via_git_push
 
+def process_args(args_as_dict):
+    return args_as_dict
 
 def clean(config_as_dict):
     undeploy(config_as_dict)

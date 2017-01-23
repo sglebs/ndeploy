@@ -39,7 +39,8 @@ def config_file_as_dict(**kwargs):
 @click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def clean(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.clean(config_file_as_dict(**kwargs))
+    processed_args = cloud_module.process_args(kwargs)
+    cloud_module.clean(config_file_as_dict(**processed_args))
 
 
 @click.command()
@@ -52,7 +53,8 @@ def clean(**kwargs):
 @click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def deploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.deploy(config_file_as_dict(**kwargs))
+    processed_args = cloud_module.process_args(kwargs)
+    cloud_module.deploy(config_file_as_dict(**processed_args))
 
 
 @click.command()
@@ -65,7 +67,8 @@ def deploy(**kwargs):
 @click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 def undeploy(**kwargs):
     cloud_module = importlib.import_module(kwargs["cloud"])
-    cloud_module.undeploy(config_file_as_dict(**kwargs))
+    processed_args = cloud_module.process_args(kwargs)
+    cloud_module.undeploy(config_file_as_dict(**processed_args))
 
 
 @click.group()
@@ -78,4 +81,4 @@ cli.add_command(deploy)
 cli.add_command(undeploy)
 
 if __name__ == '__main__':
-    undeploy()
+    deploy()

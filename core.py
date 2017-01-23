@@ -91,12 +91,9 @@ def execute_program_with_timeout(cmd):
 
 def execute_program_and_print_output(cmd):
     err, out = execute_program(cmd)
-    if len(err) > 0:
-        print(err)
-        return False
-    else:
-        print(out)
-        return True
+    print(out)
+    print(err)
+    return len(err) <= 0
 
 
 class Progress(git.RemoteProgress):

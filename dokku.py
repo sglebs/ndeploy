@@ -30,7 +30,7 @@ def deploy(config_as_dict):
     deploy_via_git_push(config_as_dict)
 
 def undeploy(config_as_dict):
-    for repo, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+    for repo, branch, app_name, app_props in reversed(list(repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict))):
         dokku_rm_database_if_needed(config_as_dict, app_name, app_props)
         dokku_rm_mongo_if_needed(config_as_dict, app_name, app_props)
         os.system("echo %s > confirm.txt" % app_name)

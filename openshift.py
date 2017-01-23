@@ -22,7 +22,7 @@ def clean(config_as_dict):
 
 def undeploy(config_as_dict):
     openshift_login(config_as_dict)
-    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+    for repo_url, branch, app_name, app_props in reversed(list(repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict))):
         for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
             if label == "web":
                 label = ""  # default label, should not be used as suffix

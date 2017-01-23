@@ -1,10 +1,12 @@
 from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_push, \
-    shared_services, app_has_redis, dir_name_for_repo, \
+    shared_services, app_has_redis, dir_name_for_repo, execute_program, \
     git_clone_all, \
     repo_and_branch_and_app_name_iterator, \
     execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator
 import os
+from time import sleep
+import re
 
 def process_args(args_as_dict):
     args_as_dict["exposehost"] = "herokuapps.com"  # override regardless of what was passed
@@ -63,7 +65,28 @@ def heroku_create_redis(config_as_dict):
             continue
         print("Configuring redis for %s" % app_name)
         cmd = "%s addons:create heroku-redis:hobby-dev -a %s" % (get_cli_command(config_as_dict), app_name)
-        ok = execute_program_and_print_output(cmd)
+        err, out = execute_program(cmd)
+        print(out)
+        print(err)
+        cmd = "%s redis:info -a %s" % (get_cli_command(config_as_dict), app_name)
+        created = False
+        redis_name_and_env_var_regex = r'===\s+(\S+)\s+[(]([^)]+)[)]'
+        redis_name = ""
+        redis_env_var = None
+        while redis_env_var is None:
+            sleep(1)
+            err, out = execute_program(cmd)
+            if "creating" in out:
+                continue # wait some more
+            #=== redis-encircled-10074 (REDIS_URL)
+            redis_name_and_env_var = re.findall(redis_name_and_env_var_regex, out)
+            if len(redis_name_and_env_var) < 1:
+                continue # wait some more (env var not created yet)
+            if len(redis_name_and_env_var[0]) <= 1:
+                continue # wait some more (env var not created yet)
+            redis_name = redis_name_and_env_var[0][0]
+            redis_env_var = redis_name_and_env_var[0][1]
+        print("Created redis %s as env var %s in app %s" % (redis_name, redis_env_var, app_name))
 
 
 def heroku_configure_apps(config_as_dict):

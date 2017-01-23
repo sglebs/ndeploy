@@ -130,8 +130,7 @@ def get_repo_full_path_for_repo_url(repo_url):
 
 
 def git_rm_all(config_as_dict):
-    for app_name, app_props in config_as_dict.get("apps", {}).items():
-        repo_url = app_props.get("git", None)
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         repo_dir_name = dir_name_for_repo(repo_url)
         repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
         print("Removing %s at %s" % (app_name, repo_full_path))
@@ -140,9 +139,7 @@ def git_rm_all(config_as_dict):
 
 def git_clone_all(config_as_dict):
     progress = Progress()
-    for app_name, app_props in config_as_dict.get("apps", {}).items():
-        repo_url = app_props.get("git", None)
-        branch = app_props.get("branch", None)
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         repo_full_path = get_repo_full_path_for_repo_url(repo_url)
         if os.path.exists(repo_full_path):
             print("Already cloned %s from %s" % (app_name, repo_url))
@@ -178,7 +175,8 @@ def repo_and_branch_and_app_name_iterator(config_as_dict):
 
 
 def repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
-    for app_name, app_props in config_as_dict.get("apps", {}).items():
+    for app_props in config_as_dict.get("apps", []):
+        app_name = app_props.get("name", None)
         repo_url = app_props.get("git", None)
         repo_branch = app_props.get("branch", None)
         yield repo_url, repo_branch, app_name, app_props

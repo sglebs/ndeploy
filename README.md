@@ -79,7 +79,7 @@ apps:
       {% if scenario|string() == "live" %}
       AD_MAX_DAYS_WITH_AD: 365
       {% endif %}
-      APP_NAME: "{{ appname }}"
+      APP_NAME: "core-{{ scenario }}-{{ area }}"
       BASE_PATH: "/api"
       BASE_URL: "core-{{ scenario }}-{{ area }}.{{ exposehost }}"
       CELERY_ALWAYS_EAGER: 0
@@ -93,9 +93,8 @@ apps:
       {% endif %}
       LANG: "pt_BR.UTF-8"
       LOGLEVEL: "DEBUG"
-      NEW_RELIC_APP_NAME: "{{ appname }}"
+      NEW_RELIC_APP_NAME: "core-{{ scenario }}-{{ area }}"
       NEW_RELIC_LOG_LEVEL: "info"
-      NEW_RELIC_LOG: "stdout"
       NEW_RELIC_SSL: "false"
       NOAUTH_TOKEN: "QAi)asfasfsffdf)sadfasf.yXc"
       {% if scenario|string() == "dev" %}
@@ -203,9 +202,8 @@ apps:
       MYCELERY_BROKER_URL: "%REDIS_URL/13"
       foo_AUTH_CHECK_URL: "%CORE_SERVER_URL/api/ddddd/check/stealth"
       foo_NOTIFICATION_PROFILE_URL: "%CORE_SERVER_URL/api/wewewew/fullnotifications"
-      NEW_RELIC_APP_NAME: "{{ appname }}"
+      NEW_RELIC_APP_NAME: "messenger-{{ scenario }}-{{ area }}"
       NEW_RELIC_LOG_LEVEL: "info"
-      NEW_RELIC_LOG: "stdout"
       NEW_RELIC_SSL: "false"
       NOTIFICATION_PROFILE_PATH: "cert/foo-prod.pem:cert/fooPlus-prod.pem"
       PROFILE_REDIS_CACHE_URL: "%REDIS_URL/1"

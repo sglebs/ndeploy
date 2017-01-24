@@ -9,7 +9,7 @@ from time import sleep
 import re
 
 def process_args(args_as_dict):
-    args_as_dict["exposehost"] = "herokuapps.com"  # override regardless of what was passed
+    args_as_dict["exposehost"] = "herokuapp.com"  # override regardless of what was passed
     args_as_dict["deployhost"] = "git.heroku.com"  # override regardless of what was passed
     return args_as_dict
 

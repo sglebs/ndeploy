@@ -103,7 +103,6 @@ def heroku_configure_apps(config_as_dict):
     app_names_by_repo_dir_name = {}
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         app_names_by_repo_dir_name[dir_name_for_repo(repo_url)] = app_name
-        #dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props)
         heroku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)  # env vars AFTER because some slam DATABASE_URL
         heroku_configure_domains(config_as_dict, app_name, app_props)
 

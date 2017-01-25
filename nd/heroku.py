@@ -3,7 +3,7 @@ import re
 from time import sleep
 
 from nd.core import git_rm_all, remote_git_add, app_has_database, app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
-    git_clone_all, apps_with_given_shared_service, \
+    git_clone_all, apps_with_given_shared_service, get_repo_full_path_for_repo_dir_name, \
     repo_and_branch_and_app_name_iterator, Progress, \
     execute_program_and_print_output, deploy_single_app_via_git_push, \
     repo_and_branch_and_app_name_and_app_props_iterator, app_has_dockerfile, procfile_iterator, app_has_procfile
@@ -141,7 +141,7 @@ def heroku_deploy_apps (config_as_dict):
                 performed_container_login = True
             for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
                 cmd = "%s container:push -a %s %s" % (get_cli_command(config_as_dict), app_name, label)
-                err, out = execute_program(cmd, dir_where_to_run=dir_name_for_repo(repo_url))
+                err, out = execute_program(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url)))
                 print(out)
                 print(err)
         else:

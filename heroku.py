@@ -1,9 +1,9 @@
 from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_push, \
     app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
     git_clone_all, apps_with_given_shared_service, \
-    repo_and_branch_and_app_name_iterator, \
-    execute_program_and_print_output, \
-    repo_and_branch_and_app_name_and_app_props_iterator
+    repo_and_branch_and_app_name_iterator, Progress, \
+    execute_program_and_print_output, deploy_single_app_via_git_push, \
+    repo_and_branch_and_app_name_and_app_props_iterator, app_has_dockerfile, procfile_iterator, app_has_procfile
 import os
 from time import sleep
 import re
@@ -31,7 +31,7 @@ def deploy(config_as_dict):
     heroku_create_databases(config_as_dict)
     heroku_create_redis(config_as_dict)
     heroku_configure_apps(config_as_dict)
-    deploy_via_git_push(config_as_dict)
+    heroku_deploy_apps(config_as_dict)
 
 # ------------------------------------------------------------
 
@@ -127,3 +127,20 @@ def heroku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props):
         os.system(cmd)
     else:
         print("WARNING: NO ENV VARS for %s" % app_name)
+
+def heroku_deploy_apps (config_as_dict):
+    progress = Progress()
+    performed_container_login = False
+    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        if app_has_dockerfile(config_as_dict, dir_name_for_repo(repo_url)) and app_has_procfile(config_as_dict, dir_name_for_repo(repo_url)):
+            if not performed_container_login:
+                cmd = "%s container:login" % (get_cli_command(config_as_dict))
+                print(cmd)
+                os.system(cmd)
+                performed_container_login = True
+            for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
+                cmd = "%s container:push -a %s %s" % (get_cli_command(config_as_dict), app_name, label)
+                print(cmd)
+                os.system(cmd)
+        else:
+            deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url)

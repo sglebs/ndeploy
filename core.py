@@ -53,6 +53,10 @@ def procfile_path(config_as_dict, original_app_dir_name):
     return "%s/Procfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
 
 
+def dockerfile_path(config_as_dict, original_app_dir_name):
+    return "%s/Dockerfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+
+
 def custom_run_script_path(config_as_dict, original_app_dir_name):
     return "%s/.s2i/bin/run" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
 
@@ -63,6 +67,10 @@ def app_has_custom_run_script_path(config_as_dict, original_app_dir_name):
 
 def app_has_procfile(config_as_dict, original_app_dir_name):
     return os.path.exists(procfile_path(config_as_dict, original_app_dir_name))
+
+
+def app_has_dockerfile(config_as_dict, original_app_dir_name):
+    return os.path.exists(dockerfile_path(config_as_dict, original_app_dir_name))
 
 
 def procfile_iterator(config_as_dict, original_app_dir_name):
@@ -231,15 +239,19 @@ def docker_options_iterator(app_props):
 def deploy_via_git_push(config_as_dict):
     progress = Progress()
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-        repo_dir_name = dir_name_for_repo(repo_url)
-        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
-        repo = git.Repo(repo_full_path)
-        git_remote = repo.remote(get_remote_repo_name(config_as_dict))
-        ref_spec = "%s:%s" % (branch, "master")
-        print("Deploying: %s (%s)" % (app_name, repo_url))
-        push_infos = git_remote.push(ref_spec, progress=progress)
-        push_info = push_infos[0]
-        print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
-        if push_info.flags & 16:  # remote push rejected
-            # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
-            print("Failed push for %s (%s)" % (app_name, repo_dir_name))
+        deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url)
+
+
+def deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url):
+    repo_dir_name = dir_name_for_repo(repo_url)
+    repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+    repo = git.Repo(repo_full_path)
+    git_remote = repo.remote(get_remote_repo_name(config_as_dict))
+    ref_spec = "%s:%s" % (branch, "master")
+    print("Deploying: %s (%s)" % (app_name, repo_url))
+    push_infos = git_remote.push(ref_spec, progress=progress)
+    push_info = push_infos[0]
+    print("Push result flags: %s (%s)" % (push_info.flags, push_info.summary))
+    if push_info.flags & 16:  # remote push rejected
+        # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
+        print("Failed push for %s (%s)" % (app_name, repo_dir_name))

@@ -5,29 +5,33 @@ and your microsrvices to be dployed.
 
 It is basic and fragile for now. Start-up use.
 
-# PaaS supported
+# PaaS support
 
-  * dokku (--cloud=nd.dokku for our built-in implementation)
-  * openshift origin (--cloud=nd.openshift for our built-in implementation)
-  * heroku (--cloud=nd.heroku for our built-in implementation)
+PaaS support is pluggabnle via Python modules. Example: --cloud=foo will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
+We ship a few, prefixed with "nd" (stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
+we have support for:
+
+  * dokku (--cloud=nd.dokku for our built-in implementation - see sources in nd/dokku.py)
+  * openshift origin (--cloud=nd.openshift for our built-in implementation - see sources in nd/openshift.py)
+  * heroku (--cloud=nd.heroku for our built-in implementation - see sources in nd/heroku.py)
   
 # Pre-requisites
 
 You need the CLI versions of each PaaS already installed:
 
  * dokku : https://github.com/dokku/dokku
- 
   * redis plugin: https://github.com/dokku/dokku-redis
   * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container
   * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq
   * mongo plugin: https://github.com/dokku/dokku-mongo
    
- * oc in the case of openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/
-)
+ * oc in the case of openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/ )
+ 
+ * heroku in the case of Heroku
  
 You need the PaaS already installed. You probably want to start with them under Vagrant on your PC. For each one of them, you want the plugins installed (PostgreSQL, RabbitMQ, etc).
 
-# How to install
+# How to install ndeploy
 
  * pip3 install git+https://github.com/sglebs/ndeploy
 
@@ -36,9 +40,30 @@ You need the PaaS already installed. You probably want to start with them under 
 You need to build a config file describing your solution. It can be yaml, json or toml.
 This file can be templated, with values passed in at the command-line.
 
-Here is a simplified solution file in .yaml format for a real deploy based on 2 microservices
-in python which use celery, redis and postgres. For the live deploy, an existing AMAZON RDS 
-database is used, whereas for dev deploys a new one is created on-the-fly (PaaS add-on).
+Let' start with a simple project: 1 microservice with one database, described in yaml format:
+
+```yaml
+apps:
+  - name: "gift-card-{{ scenario|lower }}"
+    git : "https://gitlab.foo.com/gift-card/gift-card.git"
+    branch : "master"
+    services_used:
+      - "pg-for-gift-card"
+    envs:
+      APP_ENV: "{{ scenario }}"
+      WEB_CONCURRENCY: 4
+shared_services:
+  postgres:
+    - "pg-for-gift-card"
+````
+
+The project above can be deployed against heroku for example: ndeploy deploy --cloud=nd.heroku --scenario=Production solution.yaml
+It can be undepkloyed like this:  ndeploy undeploy --cloud=nd.heroku --scenario=Production solution.yaml
+
+Now an elaborate solution in .yaml format for 2 microservices
+in python which use a celery each, a redis each (one is shared between the two) and one postgres each. 
+For the live deploy, an existing AMAZON RDS database is used instead, whereas for dev deploys a new postgres is
+created on-the-fly (PaaS add-on).
 
 ```yaml
 apps:

@@ -1,8 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='ndeploy',
     version='0.3',
+    packages=find_packages(),
     description='Deploys n microservices to n PaaS',
     url='https://github.com/sglebs/ndeploy',
     author='Marcio Marchini',

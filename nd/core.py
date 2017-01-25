@@ -97,8 +97,8 @@ def execute_program_with_timeout(cmd):
     return execute_program(cmd)
 
 
-def execute_program_and_print_output(cmd):
-    err, out = execute_program(cmd)
+def execute_program_and_print_output(cmd, dir_where_to_run=None):
+    err, out = execute_program(cmd, dir_where_to_run=dir_where_to_run)
     print(out)
     print(err)
     return len(err) <= 0

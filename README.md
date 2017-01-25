@@ -7,9 +7,9 @@ It is basic and fragile for now. Start-up use.
 
 # PaaS supported
 
-  * dokku
-  * openshift origin
-  * heroku (under construction)
+  * dokku (--cloud=nd.dokku for our built-in implementation)
+  * openshift origin (--cloud=nd.openshift for our built-in implementation)
+  * heroku (--cloud=nd.heroku for our built-in implementation)
   
 # Pre-requisites
 
@@ -262,7 +262,7 @@ shared_services:
 # How to Deploy
 
 ```
-ndeploy --deployhost=dokku.me /my/solution/ndeploy.toml
+ndeploy deploy --deployhost=dokku.me /my/solution/ndeploy.toml
 ```
 In the case of openshift, you may have exposed URLs using a different hostname. In these cases, use exposehost:
 ```
@@ -280,7 +280,7 @@ ndeploy --deployhost=dokku-vagrant.sglebs.com --scenario=debug /my/solution/ndep
 ```
 If you need to template based on the target PaaS ("cloud" parameter, which can be passed in) or the deployhost, it can also be done, like this:
 ```
-{% if system|string() == "dokku" or deployhost|string() == "openshift.sglebs.com"%}
+{% if cloud|string() == "nd.dokku" or deployhost|string() == "openshift.sglebs.com"%}
 {% endif %}
 ```
 

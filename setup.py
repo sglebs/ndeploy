@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ndeploy',
-    version='0.2',
+    version='0.3',
     description='Deploys n microservices to n PaaS',
     url='https://github.com/sglebs/ndeploy',
     author='Marcio Marchini',

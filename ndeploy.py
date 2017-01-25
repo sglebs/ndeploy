@@ -1,11 +1,16 @@
-import click
 import functools
-import toml, json, yaml
+import getpass
 import importlib
+
+import click
+import json
+import toml
+import yaml
 from jinja2 import BaseLoader
 from jinja2.environment import Environment
-import getpass
-from core import merge_two_dicts
+
+from nd.core import merge_two_dicts
+
 
 def templated_file_contents(options, configfile):
     env = Environment(loader=BaseLoader)

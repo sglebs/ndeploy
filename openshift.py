@@ -1,4 +1,10 @@
-from core import git_rm_all, app_has_database, \
+import getpass
+import os
+import socket
+
+import timeout_decorator
+
+from nd.core import git_rm_all, app_has_database, \
     execute_program_with_timeout, execute_program, \
     dir_name_for_repo, git_clone_all, \
     repo_and_branch_and_app_name_iterator, \
@@ -6,10 +12,6 @@ from core import git_rm_all, app_has_database, \
     repo_and_branch_and_app_name_and_app_props_iterator, \
     get_repo_full_path_for_repo_url, templated_file_lines_iterator, \
     templated_file_contents, procfile_iterator
-import os
-import timeout_decorator
-import getpass
-import socket
 
 
 def process_args(args_as_dict):

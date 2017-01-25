@@ -1,12 +1,13 @@
-from core import git_rm_all, remote_git_add, app_has_database, deploy_via_git_push, \
-    app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
+import os
+import re
+from time import sleep
+
+from nd.core import git_rm_all, remote_git_add, app_has_database, app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
     git_clone_all, apps_with_given_shared_service, \
     repo_and_branch_and_app_name_iterator, Progress, \
     execute_program_and_print_output, deploy_single_app_via_git_push, \
     repo_and_branch_and_app_name_and_app_props_iterator, app_has_dockerfile, procfile_iterator, app_has_procfile
-import os
-from time import sleep
-import re
+
 
 def process_args(args_as_dict):
     args_as_dict["exposehost"] = "herokuapp.com"  # override regardless of what was passed

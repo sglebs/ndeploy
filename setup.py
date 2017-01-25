@@ -12,7 +12,7 @@ setup(
         'Jinja2',
         'timeout-decorator',
         'toml',
-        'pyyaml'
+        'pyyaml',
         'click'
     ],
     py_modules=['ndeploy'],

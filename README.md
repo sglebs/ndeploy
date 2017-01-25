@@ -1,13 +1,13 @@
 # ndeploy
 scripts to deploy N microservices (a "solution") to N PaaS, with a focus on development. 
 Using a config file as input (yaml, json or toml) you define all shared services (redis, etc) 
-and your microsrvices to be dployed.
+and your microsrvices to be deployed.
 
 It is basic and fragile for now. Start-up use.
 
 # PaaS support
 
-PaaS support is pluggabnle via Python modules. Example: --cloud=foo will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
+PaaS support is pluggable via Python modules. Example: --cloud=foo will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
 We ship a few, prefixed with "nd" (stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
 we have support for:
 
@@ -29,7 +29,8 @@ You need the CLI versions of each PaaS already installed:
  
  * heroku in the case of Heroku
  
-You need the PaaS already installed. You probably want to start with them under Vagrant on your PC. For each one of them, you want the plugins installed (PostgreSQL, RabbitMQ, etc).
+You need the PaaS already installed. You probably want to start with them under Vagrant on your PC for development. 
+For each one of them, you want the plugins already installed (PostgreSQL, RabbitMQ, etc).
 
 # How to install ndeploy
 
@@ -38,7 +39,7 @@ You need the PaaS already installed. You probably want to start with them under 
 # How to configure your project
 
 You need to build a config file describing your solution. It can be yaml, json or toml.
-This file can be templated, with values passed in at the command-line.
+This file can be templated (we use jinja2 internally), with values passed in at the command-line.
 
 Let' start with a simple project: 1 microservice with one database, described in yaml format:
 
@@ -60,8 +61,10 @@ shared_services:
 The project above can be deployed against heroku for example: ndeploy deploy --cloud=nd.heroku --scenario=Production solution.yaml
 It can be undepkloyed like this:  ndeploy undeploy --cloud=nd.heroku --scenario=Production solution.yaml
 
-Now an elaborate solution in .yaml format for 2 microservices
-in python which use a celery each, a redis each (one is shared between the two) and one postgres each. 
+Note how the --scenario passed at command-line gets injected into the template yaml file, as {{ scenario }} (jinja2 notation).
+
+Now a more elaborate solution in .yaml format for 2 microservices in python which use a celery each, 
+a redis each (one is shared between the two) and one postgres each. 
 For the live deploy, an existing AMAZON RDS database is used instead, whereas for dev deploys a new postgres is
 created on-the-fly (PaaS add-on).
 

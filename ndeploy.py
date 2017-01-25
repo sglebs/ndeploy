@@ -36,7 +36,7 @@ def config_file_as_dict(**kwargs):
 
 @click.command()
 @click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etc')
+@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
@@ -50,7 +50,7 @@ def clean(**kwargs):
 
 @click.command()
 @click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etc')
+@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
@@ -64,7 +64,7 @@ def deploy(**kwargs):
 
 @click.command()
 @click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etc')
+@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')

@@ -84,8 +84,8 @@ def procfile_iterator(config_as_dict, original_app_dir_name):
         yield ["", ""]
 
 
-def execute_program(cmd):
-    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def execute_program(cmd, dir_where_to_run=None):
+    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=dir_where_to_run)
     out, err = p.communicate()
     err = err.decode().strip()
     out = out.decode().strip()

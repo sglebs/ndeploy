@@ -141,7 +141,8 @@ def heroku_deploy_apps (config_as_dict):
                 performed_container_login = True
             for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
                 cmd = "%s container:push -a %s %s" % (get_cli_command(config_as_dict), app_name, label)
-                print(cmd)
-                os.system(cmd)
+                err, out = execute_program(cmd, dir_where_to_run=dir_name_for_repo(repo_url))
+                print(out)
+                print(err)
         else:
             deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url)

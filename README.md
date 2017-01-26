@@ -331,7 +331,12 @@ If you need to template based on the target PaaS ("cloud" parameter, which can b
 {% endif %}
 ```
 
-Special Thanks
+# Related Projects
+=================
+
+   * dpl: https://github.com/travis-ci/dpl 
+   
+# Special Thanks
 ==============
 We would like to thank [Nexxera](http://www.nexxera.com) for their partial support of the development of ndeploy.  
 

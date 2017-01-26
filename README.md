@@ -41,25 +41,24 @@ For each one of them, you want the plugins already installed (PostgreSQL, Rabbit
 You need to build a config file describing your solution. It can be yaml, json or toml.
 This file can be templated (we use jinja2 internally), with values passed in at the command-line.
 
-Let' start with a simple project: 1 microservice with one database, described in yaml format:
+Let's start with a simple project: 1 microservice with one database, described in yaml format:
 
 ```yaml
 apps:
-  - name: "gift-card-{{ scenario|lower }}"
+  - name: "gift-card-{{ scenario }}"
     git : "https://gitlab.foo.com/gift-card/gift-card.git"
     branch : "master"
     services_used:
       - "pg-for-gift-card"
     envs:
-      APP_ENV: "{{ scenario }}"
       WEB_CONCURRENCY: 4
 shared_services:
   postgres:
     - "pg-for-gift-card"
 ````
 
-The project above can be deployed against heroku for example: ndeploy deploy --cloud=nd.heroku --scenario=Production solution.yaml
-It can be undepkloyed like this:  ndeploy undeploy --cloud=nd.heroku --scenario=Production solution.yaml
+The project above can be deployed against heroku for example: ndeploy deploy --cloud=nd.heroku --scenario=dev solution.yaml
+It can be undepkloyed like this:  ndeploy undeploy --cloud=nd.heroku --scenario=dev solution.yaml
 
 Note how the --scenario passed at command-line gets injected into the template yaml file, as {{ scenario }} (jinja2 notation).
 

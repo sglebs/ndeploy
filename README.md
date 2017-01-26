@@ -2,26 +2,26 @@
 =========
 
 Building and deploying apps that follow [12factor](http://www.12factor.net) is fun but can be tedious to properly configure - all those environment variables! 
-Also, when you have to deal with DEV, STAGING, LIVE the setting of these env vars can be a pain. If you want to be PaaS-portable, wven worse,
+Also, when you have to deal with DEV, STAGING, LIVE the setting of these env vars can be a pain. If you want to be PaaS-portable, things get worse,
 as each PaaS has its own CLI and Web UI - deploying and tweaking the vars can be very time consuming.
 
-ndeploy helps you deploy a set of ("n") apps/services/microservices (we call this set a "solution", borrowing Microsoft Visual Studio's term) 
-to various PaaS ("n"), with a focus on development. 
+ndeploy helps you deploy a set of ("n") apps/services/microservices (we call this set a "solution", borrowing Microsoft's Visual Studio terminology) 
+to various PaaS ("n"), with a focus on developer productivity. 
 
-Using a config file as input (yaml, json or toml) you define all shared services (redis, etc)  and your apps/services/microservices to be deployed.
+Using a config file as input (yaml, json or toml) you define all shared services (redis, postgres, etc)  and your apps/services/microservices to be deployed.
 
-It is basic and fragile for now.
+ndeploy is basic and fragile for now, but quite useful and time saver (at least for us!).
 
 # PaaS support
 ==============
 
-PaaS support is pluggable via Python modules. Example: --cloud=foo will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
+PaaS support is pluggable via Python modules. Example: ```--cloud=foo``` will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
 We ship a few, prefixed with "nd" (nd stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
 we have support for:
 
-  * dokku (--cloud=nd.dokku for our built-in implementation - see sources in nd/dokku.py)
-  * openshift origin (--cloud=nd.openshift for our built-in implementation - see sources in nd/openshift.py)
-  * heroku (--cloud=nd.heroku for our built-in implementation - see sources in nd/heroku.py)
+  * dokku (```--cloud=nd.dokku``` for our built-in implementation - see sources in nd/dokku.py)
+  * openshift origin (```--cloud=nd.openshift``` for our built-in implementation - see sources in nd/openshift.py)
+  * heroku (```--cloud=nd.heroku``` for our built-in implementation - see sources in nd/heroku.py)
   
 Planned:
   * IBM BlueMix
@@ -76,10 +76,10 @@ shared_services:
     - "pg-for-gift-card"
 ````
 
-The project above can be deployed against heroku for example: ndeploy deploy --cloud=nd.heroku --scenario=dev solution.yaml
-It can be undepkloyed like this:  ndeploy undeploy --cloud=nd.heroku --scenario=dev solution.yaml
+The project above can be deployed against heroku for example: ```ndeploy deploy --cloud=nd.heroku --scenario=dev solution.yaml``` .
+It can be undeployed like this:  ```ndeploy undeploy --cloud=nd.heroku --scenario=dev solution.yaml```
 
-Note how the --scenario passed at command-line gets injected into the template yaml file, as {{ scenario }} (jinja2 notation).
+Note how the ```--scenario``` passed at command-line gets injected into the template yaml file, as ```{{ scenario }}``` (jinja2 notation).
 
 Now a more elaborate solution in .yaml format for 2 microservices in python which use a celery each, 
 a redis each (one is shared between the two) and one postgres each. 

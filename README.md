@@ -1,42 +1,61 @@
 # ndeploy
-scripts to deploy N microservices (a "solution") to N PaaS, with a focus on development. 
-Using a config file as input (yaml, json or toml) you define all shared services (redis, etc) 
-and your microsrvices to be deployed.
+=========
 
-It is basic and fragile for now. Start-up use.
+Building and deploying apps that follow [12factor](http://www.12factor.net) is fun but can be tedious to properly configure - all those environment variables! 
+Also, when you have to deal with DEV, STAGING, LIVE the setting of these env vars can be a pain. If you want to be PaaS-portable, wven worse,
+as each PaaS has its own CLI and Web UI - deploying and tweaking the vars can be very time consuming.
+
+ndeploy helps you deploy a set of ("n") apps/services/microservices (we call this set a "solution", borrowing Microsoft Visual Studio's term) 
+to various PaaS ("n"), with a focus on development. 
+
+Using a config file as input (yaml, json or toml) you define all shared services (redis, etc)  and your apps/services/microservices to be deployed.
+
+It is basic and fragile for now.
 
 # PaaS support
+==============
 
 PaaS support is pluggable via Python modules. Example: --cloud=foo will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
-We ship a few, prefixed with "nd" (stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
+We ship a few, prefixed with "nd" (nd stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
 we have support for:
 
   * dokku (--cloud=nd.dokku for our built-in implementation - see sources in nd/dokku.py)
   * openshift origin (--cloud=nd.openshift for our built-in implementation - see sources in nd/openshift.py)
   * heroku (--cloud=nd.heroku for our built-in implementation - see sources in nd/heroku.py)
   
+Planned:
+  * IBM BlueMix
+  * Microsoft Azure
+  * Google/docker
+  * AWS / docker
+  * tsuru
+  * ...
+  
 # Pre-requisites
+================
 
 You need the CLI versions of each PaaS already installed:
 
  * dokku : https://github.com/dokku/dokku
-  * redis plugin: https://github.com/dokku/dokku-redis
-  * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container
-  * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq
-  * mongo plugin: https://github.com/dokku/dokku-mongo
+  * redis plugin: https://github.com/dokku/dokku-redis (if you plan to use Redis)
+  * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container (if you plan to use Postgres)
+  * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq (if you plan to use RabbitMQ)
+  * mongo plugin: https://github.com/dokku/dokku-mongo (if you plan to use MongoDB)
    
- * oc in the case of openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/ )
+ * oc if you plan to deploy to openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/ )
  
- * heroku in the case of Heroku
+ * heroku if you plan to deploy to Heroku
  
 You need the PaaS already installed. You probably want to start with them under Vagrant on your PC for development. 
 For each one of them, you want the plugins already installed (PostgreSQL, RabbitMQ, etc).
 
 # How to install ndeploy
+========================
 
  * pip3 install git+https://github.com/sglebs/ndeploy
 
-# How to configure your project
+# How to configure your solution ("n" apps/services/microservices)
+==================================================================
 
 You need to build a config file describing your solution. It can be yaml, json or toml.
 This file can be templated (we use jinja2 internally), with values passed in at the command-line.
@@ -287,15 +306,16 @@ shared_services:
 ```
 
 # How to Deploy
+===============
 
 ```
 ndeploy deploy --deployhost=dokku.me /my/solution/ndeploy.toml
 ```
 In the case of openshift, you may have exposed URLs using a different hostname. In these cases, use exposehost:
 ```
-ndeploy deployhost=10.2.2.2 exposehost=my.domain.com /my/solution/ndeploy.toml
+ndeploy deployhost=10.2.2.2 exposehost=my.domain.com --cloud=nd.openshift /my/solution/ndeploy.toml
 ```
-You may want to "ifdef" dev/staging/live. This can be done using jinja2 syntax in the .toml file. Example:
+You may want to "ifdef" dev/staging/live in your configuration file. This can be done using jinja2 syntax:
 ```
 {% if scenario|string() == "debug"%}
 ...
@@ -303,7 +323,7 @@ You may want to "ifdef" dev/staging/live. This can be done using jinja2 syntax i
 ```
 Obviously, for this to work you need to pass scenario=debug to ndeploy:
 ```
-ndeploy --deployhost=dokku-vagrant.sglebs.com --scenario=debug /my/solution/ndeploy.toml
+ndeploy --deployhost=dokku-vagrant.sglebs.com --cloud=nd.dokku --scenario=debug /my/solution/ndeploy.toml
 ```
 If you need to template based on the target PaaS ("cloud" parameter, which can be passed in) or the deployhost, it can also be done, like this:
 ```
@@ -311,8 +331,9 @@ If you need to template based on the target PaaS ("cloud" parameter, which can b
 {% endif %}
 ```
 
-
-
+Special Thanks
+==============
+We would like to thank [Nexxera](http://www.nexxera.com) for their partial support of the development of ndeploy.  
 
 
 

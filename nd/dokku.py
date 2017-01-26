@@ -113,6 +113,7 @@ def dokku_create_redis_services(config_as_dict):
 
 def dokku_create_empty_apps(config_as_dict):
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
+        print("...Creating Empty app: %s" % (app_name))
         cmd = "ssh dokku@%s apps:create %s" % (config_as_dict.get("deployhost", "."), app_name)
         err, out = execute_program(cmd)
         if len(err) > 0 and 'already taken' not in err:  # some other error

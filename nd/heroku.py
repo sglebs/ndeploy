@@ -4,7 +4,7 @@ from time import sleep
 
 from nd.core import git_rm_all, remote_git_add, app_has_database, app_shared_services, app_has_redis, dir_name_for_repo, execute_program, \
     git_clone_all, apps_with_given_shared_service, get_repo_full_path_for_repo_dir_name, \
-    repo_and_branch_and_app_name_iterator, Progress, \
+    repo_and_branch_and_app_name_iterator, GitProgress, \
     execute_program_and_print_output, deploy_single_app_via_git_push, \
     repo_and_branch_and_app_name_and_app_props_iterator, app_has_dockerfile, procfile_iterator, app_has_procfile
 
@@ -130,7 +130,7 @@ def heroku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props):
         print("WARNING: NO ENV VARS for %s" % app_name)
 
 def heroku_deploy_apps (config_as_dict):
-    progress = Progress()
+    git_progress = GitProgress()
     performed_container_login = False
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
         if app_has_dockerfile(config_as_dict, dir_name_for_repo(repo_url)) and app_has_procfile(config_as_dict, dir_name_for_repo(repo_url)):
@@ -142,6 +142,6 @@ def heroku_deploy_apps (config_as_dict):
             for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
                 cmd = "%s container:push -a %s %s" % (get_cli_command(config_as_dict), app_name, label)
                 print(cmd)
-                execute_program_and_print_output(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url)))
+                execute_program_and_print_output(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url)), )
         else:
-            deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url)
+            deploy_single_app_via_git_push(app_name, branch, config_as_dict, git_progress, repo_url)

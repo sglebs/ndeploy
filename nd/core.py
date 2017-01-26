@@ -1,4 +1,4 @@
-import os
+import os, sys
 import shutil
 import git
 import timeout_decorator
@@ -84,11 +84,26 @@ def procfile_iterator(config_as_dict, original_app_dir_name):
         yield ["", ""]
 
 
-def execute_program(cmd, dir_where_to_run=None):
+def execute_program(cmd, dir_where_to_run=None, exec_progress = None):
     p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=dir_where_to_run)
-    out, err = p.communicate()
-    err = err.decode().strip()
-    out = out.decode().strip()
+    if exec_progress is None:
+        out, err = p.communicate()
+        err = err.decode().strip()
+        out = out.decode().strip()
+    else:
+        out = ""
+        err = ""
+        while True:
+            output = str(p.stdout.read(1), 'utf-8')
+            out += output
+            if len(output) > 0:
+                exec_progress.stdout_line(output)
+            output = str(p.stdout.read(1), 'utf-8')
+            err += output
+            if len(output) > 0:
+                exec_progress.stderr_line(output)
+            if p.poll() != None:
+                break
     return err, out
 
 
@@ -98,18 +113,26 @@ def execute_program_with_timeout(cmd):
 
 
 def execute_program_and_print_output(cmd, dir_where_to_run=None):
-    err, out = execute_program(cmd, dir_where_to_run=dir_where_to_run)
-    print(out)
-    print(err)
+    err, out = execute_program(cmd, dir_where_to_run=dir_where_to_run, exec_progress = ExecProgress())
     return len(err) <= 0
 
 
-class Progress(git.RemoteProgress):
+class GitProgress(git.RemoteProgress):
     def line_dropped(self, line):
         print(self._cur_line)
 
     def update(self, *args):
         print(self._cur_line)
+
+
+class ExecProgress():
+    def stdout_line(self, pipe_data):
+        sys.stdout.write(pipe_data)
+        sys.stdout.flush()
+
+    def stderr_line(self, pipe_data):
+        sys.stderr.write(pipe_data)
+        sys.stderr.flush()
 
 
 def current_path():
@@ -146,7 +169,7 @@ def git_rm_all(config_as_dict):
 
 
 def git_clone_all(config_as_dict):
-    progress = Progress()
+    progress = GitProgress()
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         repo_full_path = get_repo_full_path_for_repo_url(repo_url)
         if os.path.exists(repo_full_path):
@@ -237,7 +260,7 @@ def docker_options_iterator(app_props):
 
 
 def deploy_via_git_push(config_as_dict):
-    progress = Progress()
+    progress = GitProgress()
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
         deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url)
 

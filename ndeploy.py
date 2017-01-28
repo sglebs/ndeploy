@@ -11,6 +11,10 @@ from jinja2.environment import Environment
 
 from nd.core import merge_two_dicts
 
+## define custom tag handler
+def join(loader, node):
+    seq = loader.construct_sequence(node)
+    return ''.join([str(i) for i in seq])
 
 def templated_file_contents(options, configfile):
     env = Environment(loader=BaseLoader)
@@ -28,6 +32,7 @@ def config_file_as_dict(**kwargs):
     elif cfgfile.name.endswith(".toml"):
         cfgdata = toml.loads(cfgfile_contents)
     elif cfgfile.name.endswith(".yaml"):
+        yaml.add_constructor('!join', join) # http://stackoverflow.com/questions/5484016/how-can-i-do-string-concatenation-or-string-replacement-in-yaml
         cfgdata = yaml.load(cfgfile_contents)
     else:
         raise ValueError("Invalid config file format")

@@ -218,7 +218,10 @@ def get_deploy_host(options):
 
 
 def shared_services(shared_service_type, config_as_dict):
-    return config_as_dict.get("shared_services", {}).get(shared_service_type, [])
+    all_shared_services =  config_as_dict.get("shared_services", None)
+    if all_shared_services is None:
+        return {}
+    return all_shared_services.get(shared_service_type, [])
 
 
 def apps_with_given_shared_service(shared_service_type, config_as_dict, shared_service_name):

@@ -50,7 +50,7 @@ def get_cli_command(config_as_dict):
 def openshift_create_project_area(config_as_dict):
     os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
     os.system("%s project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
-    os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict))
+    os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
     os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % get_cli_command(config_as_dict))
 
 def openshift_create_empty_apps(config_as_dict):
@@ -82,7 +82,7 @@ def openshift_create_empty_apps(config_as_dict):
                                                                                 suffixfromlabel=suffix_from_label,
                                                                                 procfilelabel=label,
                                                                                 cmdline=cmd_line))
-            print("\n\n*****Creating app %s: %s \n\n" % (app_name, cmd))
+            print("\n\n**Creating app %s:%s: %s \n\n" % (app_name, label, cmd))
             err, out = execute_program(cmd)
             if len(err) > 0:  # some other error
                 print(err)
@@ -91,7 +91,7 @@ def openshift_create_empty_apps(config_as_dict):
             os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label))
             if suffix_from_label == "": #main target, exposed
                 cmd = "%s expose service/%s --hostname=%s" % (get_cli_command(config_as_dict), app_name, get_openshift_app_host(config_as_dict, app_name))
-                print("...Creating app route for %s :  %s" % (app_name, cmd))
+                print("Creating app route for %s :  %s" % (app_name, cmd))
                 err, out = execute_program(cmd)
                 if len(err) > 0:  # some other error
                     print(err)

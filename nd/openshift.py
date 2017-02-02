@@ -28,7 +28,7 @@ def undeploy(config_as_dict):
         for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
             if label == "web":
                 label = ""  # default label, should not be used as suffix
-            print("...Removing app %s%s" % (app_name, label))
+            print("Removing app %s%s" % (app_name, label))
             os.system("%s delete all -l app=%s%s" % (get_cli_command(config_as_dict),app_name, label))
         openshift_rm_database_if_needed(config_as_dict, repo_url, app_name, app_props)
     #    openshift_rm_mongo_if_needed(config_as_dict, repo_url, app_name)
@@ -129,7 +129,7 @@ def openshift_inject_requiremets_app(config_as_dict, repo_url, app_name, app_nam
         required_app_url = "https://%s" % get_openshift_app_host(config_as_dict, required_app_name)
         cmd = '%s env dc/%s -e %s_URL=%s' % \
               (get_cli_command(config_as_dict), app_name, required_app_repo_dir_name.upper().replace("-", "_"), required_app_url)
-        print("...Configuring required app for %s: %s" % (app_name, cmd))
+        print("Configuring required app for %s: %s" % (app_name, cmd))
         os.system(cmd)
 
 
@@ -161,7 +161,7 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
           "-e POSTGRESQL_PASSWORD=pass_{dbname} " \
           "-e POSTGRESQL_ADMIN_PASSWORD=admin_{dbname}".format(cli=get_cli_command(config_as_dict), shortenedappname=get_openshift_short_app_name(app_name),
                                                                dbname=get_openshift_db_name_from_app_name(app_name))
-    print("...Configuring database for %s :  %s " % (app_name, cmd))
+    print("Configuring database for %s :  %s " % (app_name, cmd))
     ok = execute_program_and_print_output(cmd)
     if not ok:
         return False
@@ -169,7 +169,7 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
         shortenedappname=get_openshift_short_app_name(app_name),
         dbname=get_openshift_db_name_from_app_name(app_name),
         deployhost=config_as_dict.get("deployhost", "."))
-    print("...Setting DATABASE_URL=%s   in %s" % (db_url, app_name))
+    print("Setting DATABASE_URL=%s   in %s" % (db_url, app_name))
     cmd = '%s env dc/%s -e DATABASE_URL=%s' % (get_cli_command(config_as_dict), app_name, db_url)
     ok = execute_program_and_print_output(cmd)
     if not ok:
@@ -226,7 +226,7 @@ def openshift_rm_database_if_needed(config_as_dict, repo_url, app_name, app_prop
     original_app_name = dir_name_for_repo(repo_url)
     if not app_has_database(config_as_dict, original_app_name, app_props):
         return
-    print("...Removing database for %s." % app_name)
+    print("Removing database for %s." % app_name)
     cmd = "%s delete all -l app=pg-%s" % (get_cli_command(config_as_dict), get_openshift_short_app_name(app_name))
     ok = execute_program_and_print_output(cmd)
     if not ok:

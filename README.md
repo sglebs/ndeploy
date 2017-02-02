@@ -335,6 +335,7 @@ If you need to template based on the target PaaS ("cloud" parameter, which can b
 =================
 
    * dpl: https://github.com/travis-ci/dpl 
+   * https://github.com/nexxera/ndeploy is a descendant of "our" ndeploy. It adds support to build and promote docker images in a build pipeline, which saves CPU resources since you don't need a full clean build every time.
    
 # Special Thanks
 ==============

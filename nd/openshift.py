@@ -11,7 +11,7 @@ from nd.core import git_rm_all, app_has_database, \
     execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator, \
     get_repo_full_path_for_repo_url, templated_file_lines_iterator, \
-    templated_file_contents, procfile_iterator
+    templated_file_contents, procfile_iterator, app_has_dockerfile
 
 
 def process_args(args_as_dict):
@@ -59,22 +59,29 @@ def openshift_create_empty_apps(config_as_dict):
         # if app_has_procfile(options, dir_name_for_repo(repo_url)) and app_has_custom_run_script_path(options, dir_name_for_repo(repo_url)):
         #     labels_and_cmdlines = [[label, cmd_line] for label, cmd_line in procfile_iterator(options,dir_name_for_repo(repo_url))]
         for label, cmd_line in procfile_iterator(config_as_dict,dir_name_for_repo(repo_url)):
+            if app_has_dockerfile(config_as_dict, dir_name_for_repo(repo_url)):
+                strategy = "docker"
+            else:
+                strategy = "source"
             suffix_from_label = label
             if label == "web":
                 suffix_from_label = ""  # default label, should not be used as suffix
-            cmd = '{cli} new-app --name={appname}{suffixfromlabel}' \
+            cmd = '{cli} new-app --strategy={strategy} --name={appname}{suffixfromlabel}' \
                    ' {repourl}#{branch} -e PORT=8080' \
-                   ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=get_cli_command(config_as_dict), appname=app_name,
-                                                     repourl=get_http_repo_url(repo_url),
-                                                     branch=branch,
-                                                     repofullpath=get_repo_full_path_for_repo_url(repo_url),
-                                                     suffixfromlabel=suffix_from_label,
-                                                     procfilelabel=label,
-                                                     cmdline=cmd_line)
+                   ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=get_cli_command(config_as_dict),
+                                                        strategy=strategy,
+                                                        appname=app_name,
+                                                        repourl=get_http_repo_url(repo_url),
+                                                        branch=branch,
+                                                        repofullpath=get_repo_full_path_for_repo_url(repo_url),
+                                                        suffixfromlabel=suffix_from_label,
+                                                        procfilelabel=label,
+                                                        cmdline=cmd_line)
             if "openshift-template" in app_props.get("paas_tweaks", {}):
                 openshift_template_contents = app_props["paas_tweaks"]["openshift-template"]
                 if len(openshift_template_contents.strip()) > 0:
-                    cmd = "%s new-app %s" % (get_cli_command(config_as_dict), openshift_template_contents.format(template=openshift_template_contents,
+                    strategy = "source" # if a template is provided, it is source-based, not docker-based
+                    cmd = "%s new-app --strategy=%s %s " % (get_cli_command(config_as_dict), strategy, openshift_template_contents.format(template=openshift_template_contents,
                                                                                 appname=app_name,
                                                                                 repourl=get_http_repo_url(repo_url),
                                                                                 branch=branch,
@@ -82,13 +89,13 @@ def openshift_create_empty_apps(config_as_dict):
                                                                                 suffixfromlabel=suffix_from_label,
                                                                                 procfilelabel=label,
                                                                                 cmdline=cmd_line))
-            print("\n\n**Creating app %s:%s: %s \n\n" % (app_name, label, cmd))
+            print("Creating app %s:%s: %s \n\n" % (app_name, label, cmd))
             err, out = execute_program(cmd)
             if len(err) > 0:  # some other error
                 print(err)
             else:
                 print(out)
-            os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label))
+            os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
             if suffix_from_label == "": #main target, exposed
                 cmd = "%s expose service/%s --hostname=%s" % (get_cli_command(config_as_dict), app_name, get_openshift_app_host(config_as_dict, app_name))
                 print("Creating app route for %s :  %s" % (app_name, cmd))

@@ -95,7 +95,9 @@ def openshift_create_empty_apps(config_as_dict):
                 print(err)
             else:
                 print(out)
-            os.system("%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
+            cmd = "%s patch bc %s%s -p '{\"spec\":{\"source\":{\"sourceSecret\":{\"name\":\"scmsecret\"}}}}'" % (get_cli_command(config_as_dict), app_name,suffix_from_label) # See https://blog.openshift.com/deploying-from-private-git-repositories/
+            print("Enabling SSH private key for app %s:%s: %s \n\n" % (app_name, label, cmd))
+            os.system(cmd)
             if suffix_from_label == "": #main target, exposed
                 cmd = "%s expose service/%s --hostname=%s" % (get_cli_command(config_as_dict), app_name, get_openshift_app_host(config_as_dict, app_name))
                 print("Creating app route for %s :  %s" % (app_name, cmd))

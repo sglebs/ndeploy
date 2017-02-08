@@ -1,14 +1,15 @@
 import os
-import timeout_decorator
+
+# See http://docs.stackato.com/user/reference/client-ref.html
 
 from nd.core import git_rm_all, app_has_database, \
-    execute_program_with_timeout, execute_program, \
+    execute_program, \
     dir_name_for_repo, git_clone_all, get_area_name, \
-    repo_and_branch_and_app_name_iterator, get_http_repo_url, \
+    get_http_repo_url, \
     execute_program_and_print_output, get_repo_full_path_for_repo_dir_name, \
     repo_and_branch_and_app_name_and_app_props_iterator, \
-    get_repo_full_path_for_repo_url, templated_file_lines_iterator, \
-    templated_file_contents, procfile_iterator, app_has_dockerfile
+    get_repo_full_path_for_repo_url, \
+    procfile_iterator
 
 
 def process_args(config_as_dict):
@@ -73,20 +74,24 @@ def get_cli_command(config_as_dict):
 def stackato_login(config_as_dict):
     cmd = "%s target https://api.%s" % (get_cli_command(config_as_dict), config_as_dict.get("deployhost", "."))
     err, out = execute_program(cmd)
+    print(out)
+    print(err)
     if "<none>" in out or "<none>" in err: # undefined area etc
         cmd = "%s login" % (get_cli_command(config_as_dict))
         execute_program_and_print_output(cmd)
-    print (out)
-    print (err)
 
 
 def stackato_deploy_apps(config_as_dict):
-    for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-        for label, cmd_line in procfile_iterator(config_as_dict,dir_name_for_repo(repo_url)):
-            suffix_from_label = label
-            if label == "web":
-                suffix_from_label = ""  # default label, should not be used as suffix
-            cmd = "%s push -n %s%s" % (get_cli_command(config_as_dict), app_name, suffix_from_label)
-            print ("Pushing code: %s" % cmd)
-            execute_program_and_print_output(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(
-                dir_name_for_repo(repo_url), config_as_dict))
+    for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
+        buildpack_url = app_props["envs"].get("BUILDPACK_URL", "") if "envs" in app_props else ""
+        if len (buildpack_url) > 0:
+            buildpack_cmdline = " --buildpack=%s " % buildpack_url
+        else:
+            buildpack_cmdline = ""
+        repo_full_path = get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url), config_as_dict)
+        cmd = "%s push -n --as %s %s --path=%s" % (get_cli_command(config_as_dict), app_name, buildpack_cmdline, repo_full_path)
+        print("Pushing code: %s" % cmd)
+        os.system(cmd)
+        cmd = "%s start %s" % (get_cli_command(config_as_dict), app_name)
+        print("Starting app: %s" % cmd)
+        os.system(cmd)

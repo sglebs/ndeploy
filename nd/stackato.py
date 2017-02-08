@@ -1,4 +1,5 @@
 import os
+import re
 
 # See http://docs.stackato.com/user/reference/client-ref.html
 
@@ -9,7 +10,7 @@ from nd.core import git_rm_all, app_has_database, \
     execute_program_and_print_output, get_repo_full_path_for_repo_dir_name, \
     repo_and_branch_and_app_name_and_app_props_iterator, \
     get_repo_full_path_for_repo_url, \
-    procfile_iterator
+    procfile_iterator, shared_services, app_shared_services
 
 
 def process_args(config_as_dict):
@@ -38,6 +39,7 @@ def deploy(config_as_dict):
     stackato_login(config_as_dict)
     stackato_create_project_area(config_as_dict)
     stackato_create_empty_apps(config_as_dict)
+    stackato_create_redis_services(config_as_dict)
     stackato_configure_created_apps(config_as_dict)
     stackato_deploy_apps(config_as_dict)
 
@@ -94,6 +96,7 @@ def stackato_configure_created_apps(config_as_dict):
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         app_names_by_repo_dir_name[dir_name_for_repo(repo_url)] = app_name
         stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)  # env vars AFTER because some slam DATABASE_URL
+        stackato_inject_redis_service_if_needed(config_as_dict, app_name, app_props)
         #stackato_configure_domains(config_as_dict, app_name, app_props)
 
 def stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props):
@@ -105,3 +108,26 @@ def stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)
             os.system(cmd)
     else:
         print("WARNING: NO ENV VARS for %s" % app_name)
+
+def stackato_create_redis_services(config_as_dict):
+    for service_name in shared_services("redis", config_as_dict):
+        cmd = "%s create-service redis %s" % (get_cli_command(config_as_dict), service_name)
+        print("...Creating Redis Service %s: %s" % (service_name, cmd))
+        os.system(cmd)
+
+def stackato_inject_redis_service_if_needed(config_as_dict, app_name, app_props):
+    for service_name in app_shared_services("redis", config_as_dict, app_name, app_props):
+        cmd = "%s bind-service %s %s" % (get_cli_command(config_as_dict), service_name, app_name)
+        print("...Injecting Redis service %s into app %s: %s" % (service_name, app_name, cmd))
+        err, out = execute_program(cmd)
+        print(err)
+        print(out)
+        if "Setting config vars" not in out:
+            raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
+        #TODO: get URL of service and make it publicly available
+        url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        urls = re.findall(url_regex, out)
+        injected_redis_url = urls[0]
+        print("...URLing Redis service %s with url %s in an env var" % (service_name, injected_redis_url))
+        cmd = "%s env-add %s %s_URL \"%s\" " % (get_cli_command(config_as_dict), app_name, service_name.upper().replace("-", "_"), injected_redis_url)
+        os.system(cmd)

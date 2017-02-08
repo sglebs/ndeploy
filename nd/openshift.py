@@ -1,4 +1,3 @@
-import getpass
 import os
 import socket
 
@@ -11,11 +10,11 @@ from nd.core import git_rm_all, app_has_database, \
     execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator, \
     get_repo_full_path_for_repo_url, templated_file_lines_iterator, \
-    templated_file_contents, procfile_iterator, app_has_dockerfile
+    templated_file_contents, procfile_iterator, app_has_dockerfile, get_area_name, get_http_repo_url
 
 
-def process_args(args_as_dict):
-    return args_as_dict
+def process_args(config_as_dict):
+    return config_as_dict
 
 def clean(config_as_dict):
     undeploy(config_as_dict)
@@ -48,8 +47,8 @@ def get_cli_command(config_as_dict):
     return "%s/oc" % config_as_dict["cli_dir"]
 
 def openshift_create_project_area(config_as_dict):
-    os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
-    os.system("%s project %s" % (get_cli_command(config_as_dict), get_openshift_area_name(config_as_dict)))
+    os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
+    os.system("%s project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
     os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
     os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % get_cli_command(config_as_dict))
 
@@ -69,26 +68,26 @@ def openshift_create_empty_apps(config_as_dict):
             cmd = '{cli} new-app --strategy={strategy} --name={appname}{suffixfromlabel}' \
                    ' {repourl}#{branch} -e PORT=8080' \
                    ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=get_cli_command(config_as_dict),
-                                                        strategy=strategy,
-                                                        appname=app_name,
-                                                        repourl=get_http_repo_url(repo_url),
-                                                        branch=branch,
-                                                        repofullpath=get_repo_full_path_for_repo_url(repo_url),
-                                                        suffixfromlabel=suffix_from_label,
-                                                        procfilelabel=label,
-                                                        cmdline=cmd_line)
+                                                                strategy=strategy,
+                                                                appname=app_name,
+                                                                repourl=get_http_repo_url(repo_url),
+                                                                branch=branch,
+                                                                repofullpath=get_repo_full_path_for_repo_url(repo_url, config_as_dict),
+                                                                suffixfromlabel=suffix_from_label,
+                                                                procfilelabel=label,
+                                                                cmdline=cmd_line)
             if "openshift-template" in app_props.get("paas_tweaks", {}):
                 openshift_template_contents = app_props["paas_tweaks"]["openshift-template"]
                 if len(openshift_template_contents.strip()) > 0:
                     strategy = "source" # if a template is provided, it is source-based, not docker-based
                     cmd = "%s new-app --strategy=%s %s " % (get_cli_command(config_as_dict), strategy, openshift_template_contents.format(template=openshift_template_contents,
-                                                                                appname=app_name,
-                                                                                repourl=get_http_repo_url(repo_url),
-                                                                                branch=branch,
-                                                                                repofullpath=get_repo_full_path_for_repo_url(repo_url),
-                                                                                suffixfromlabel=suffix_from_label,
-                                                                                procfilelabel=label,
-                                                                                cmdline=cmd_line))
+                                                                                                                                          appname=app_name,
+                                                                                                                                          repourl=get_http_repo_url(repo_url),
+                                                                                                                                          branch=branch,
+                                                                                                                                          repofullpath=get_repo_full_path_for_repo_url(repo_url, config_as_dict),
+                                                                                                                                          suffixfromlabel=suffix_from_label,
+                                                                                                                                          procfilelabel=label,
+                                                                                                                                          cmdline=cmd_line))
             print("Creating app %s:%s: %s \n\n" % (app_name, label, cmd))
             err, out = execute_program(cmd)
             if len(err) > 0:  # some other error
@@ -121,11 +120,11 @@ def openshift_configure_created_apps(config_as_dict):
 
 
 def get_openshift_app_host(config_as_dict, app_name):
-    return "%s-%s.%s" % (app_name, get_openshift_area_name(config_as_dict), config_as_dict.get("exposehost", "."))
+    return "%s-%s.%s" % (app_name, get_area_name(config_as_dict), config_as_dict.get("exposehost", "."))
 
 
 def openshift_inject_requiremets_app(config_as_dict, repo_url, app_name, app_names_by_repo_dir_name):
-    requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url)
+    requirements_app = "%s/requirements.app" % get_repo_full_path_for_repo_url(repo_url, config_as_dict)
     for line in templated_file_lines_iterator(config_as_dict, requirements_app):
         required_app_repo_dir_name = line.strip()
         required_app_name = app_names_by_repo_dir_name.get(required_app_repo_dir_name, None)
@@ -184,19 +183,9 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
     if not ok:
         return False
 
-def get_openshift_area_name(config_as_dict):
-    default = getpass.getuser()
-    return config_as_dict.get("area", default).replace(".", "")
-
 
 def get_openshift_template_contents(config_as_dict, openshift_template_path):
     return templated_file_contents(config_as_dict, openshift_template_path).strip()
-
-
-def get_http_repo_url(repo_url):
-    adapted_repo_url = repo_url.replace(":", "/").replace("git@", "https://") if repo_url.startswith(
-        "git") else repo_url
-    return adapted_repo_url
 
 
 def get_openshift_short_app_name(app_name):

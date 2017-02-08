@@ -1,3 +1,4 @@
+import getpass
 import os, sys
 import shutil
 import git
@@ -11,7 +12,7 @@ from jinja2.environment import Environment
 def remote_git_add(config_as_dict, url_template, host):
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
         repo_dir_name = dir_name_for_repo(repo_url)
-        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+        repo_full_path = get_repo_full_path_for_repo_dir_name(repo_dir_name, config_as_dict)
         repo = git.Repo(repo_full_path)
         git_remote = url_template.format(host=host, app_name=app_name)
         gitremote_repo_name = get_remote_repo_name(config_as_dict)
@@ -50,15 +51,15 @@ def templated_file_lines_iterator(config_as_dict, file_path):
 
 
 def procfile_path(config_as_dict, original_app_dir_name):
-    return "%s/Procfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+    return "%s/Procfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name, config_as_dict)
 
 
 def dockerfile_path(config_as_dict, original_app_dir_name):
-    return "%s/Dockerfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+    return "%s/Dockerfile" % get_repo_full_path_for_repo_dir_name(original_app_dir_name, config_as_dict)
 
 
 def custom_run_script_path(config_as_dict, original_app_dir_name):
-    return "%s/.s2i/bin/run" % get_repo_full_path_for_repo_dir_name(original_app_dir_name)
+    return "%s/.s2i/bin/run" % get_repo_full_path_for_repo_dir_name(original_app_dir_name, config_as_dict)
 
 
 def app_has_custom_run_script_path(config_as_dict, original_app_dir_name):
@@ -150,20 +151,23 @@ def current_parent_path():
 def dir_name_for_repo(repo_url):
     return repo_url.split("/")[-1].split(".")[0]
 
+def git_work_area(config_as_dict):
+    return config_as_dict.get("gitworkarea", current_parent_path())
 
-def get_repo_full_path_for_repo_dir_name(repo_dir_name):
-    repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+
+def get_repo_full_path_for_repo_dir_name(repo_dir_name, config_as_dict):
+    repo_full_path = "%s/%s" % (git_work_area(config_as_dict), repo_dir_name)
     return repo_full_path
 
 
-def get_repo_full_path_for_repo_url(repo_url):
-    return get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url))
+def get_repo_full_path_for_repo_url(repo_url, config_as_dict):
+    return get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url), config_as_dict)
 
 
 def git_rm_all(config_as_dict):
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
         repo_dir_name = dir_name_for_repo(repo_url)
-        repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+        repo_full_path = get_repo_full_path_for_repo_dir_name(repo_dir_name, config_as_dict)
         print("Removing %s at %s" % (app_name, repo_full_path))
         shutil.rmtree(repo_full_path, ignore_errors=True)
 
@@ -171,14 +175,17 @@ def git_rm_all(config_as_dict):
 def git_clone_all(config_as_dict):
     progress = GitProgress()
     for repo_url, branch, app_name, app_props in repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict):
-        repo_full_path = get_repo_full_path_for_repo_url(repo_url)
+        repo_full_path = get_repo_full_path_for_repo_url(repo_url, config_as_dict)
         if os.path.exists(repo_full_path):
             print("Already cloned %s from %s" % (app_name, repo_url))
             repo = git.Repo(repo_full_path)
             if repo.active_branch.name != branch:
-                print("Your local checkout is in a different branch (%s) from the branch you want to deploy (%s). Aborting: %s" %
+                print("Your local checkout is in a different branch (%s) from the branch you want to deploy (%s). URL: %s" %
                       (repo.active_branch.name, branch, repo_url))
-                return False
+                repo.git.checkout(branch)
+            origin = repo.remotes.origin
+            #origin.fetch(branch)
+            origin.pull(branch)
         else:
             os.makedirs(repo_full_path)
             try:
@@ -270,7 +277,7 @@ def deploy_via_git_push(config_as_dict):
 
 def deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, repo_url):
     repo_dir_name = dir_name_for_repo(repo_url)
-    repo_full_path = "%s/%s" % (current_parent_path(), repo_dir_name)
+    repo_full_path = get_repo_full_path_for_repo_dir_name(repo_dir_name, config_as_dict)
     repo = git.Repo(repo_full_path)
     git_remote = repo.remote(get_remote_repo_name(config_as_dict))
     ref_spec = "%s:%s" % (branch, "master")
@@ -281,3 +288,14 @@ def deploy_single_app_via_git_push(app_name, branch, config_as_dict, progress, r
     if push_info.flags & 16:  # remote push rejected
         # see # https://gitpython.readthedocs.org/en/0.3.3/reference.html#git.remote.PushInfo
         print("Failed push for %s (%s)" % (app_name, repo_dir_name))
+
+
+def get_area_name(config_as_dict):
+    default = getpass.getuser()
+    return config_as_dict.get("area", default).replace(".", "")
+
+
+def get_http_repo_url(repo_url):
+    adapted_repo_url = repo_url.replace(":", "/").replace("git@", "https://") if repo_url.startswith(
+        "git") else repo_url
+    return adapted_repo_url

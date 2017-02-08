@@ -11,8 +11,8 @@ from nd.core import git_rm_all, remote_git_add, app_has_database, app_has_mongo,
     app_shared_services, deploy_via_git_push
 
 
-def process_args(args_as_dict):
-    return args_as_dict
+def process_args(config_as_dict):
+    return config_as_dict
 
 def clean(config_as_dict):
     undeploy(config_as_dict)

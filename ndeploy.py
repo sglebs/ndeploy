@@ -40,55 +40,50 @@ def config_file_as_dict(**kwargs):
 
 
 @click.command()
-@click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
-@click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
-@click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
-@click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
-@click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
-@click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
-def clean(**kwargs):
-    cloud_module = importlib.import_module(kwargs["cloud"])
-    processed_args = cloud_module.process_args(kwargs)
-    cloud_module.clean(config_file_as_dict(**processed_args))
+@click.pass_context
+def clean(context, **kwargs):
+    #click.echo("Cleaning with params %s and context %s" % (kwargs, context.meta))
+    cloud_module = importlib.import_module(context.parent.params["cloud"])
+    config_as_dict = cloud_module.process_args(context.parent.params)
+    cloud_module.clean(config_file_as_dict(**config_as_dict))
 
 
 @click.command()
-@click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
-@click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
-@click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
-@click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
-@click.option('--area', default=getpass.getuser(), help='Name of teh area (workspace?) in the cloud/paas you are using')
-@click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
-def deploy(**kwargs):
-    cloud_module = importlib.import_module(kwargs["cloud"])
-    processed_args = cloud_module.process_args(kwargs)
-    cloud_module.deploy(config_file_as_dict(**processed_args))
+@click.pass_context
+def deploy(context, **kwargs):
+    click.echo("Deploying with params %s and parent context params %s" % (kwargs, context.parent.params))
+    cloud_module = importlib.import_module(context.parent.params["cloud"])
+    config_as_dict = cloud_module.process_args(context.parent.params)
+    cloud_module.deploy(config_file_as_dict(**config_as_dict))
 
 
 @click.command()
-@click.argument('cfgfile', type=click.File('r'))
-@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etcPrefix it with nd. to use our implementation.')
+@click.pass_context
+def undeploy(context, **kwargs):
+    click.echo("Undeploying with params %s and context %s" % (kwargs, context.meta))
+    cloud_module = importlib.import_module(context.parent.params["cloud"])
+    config_as_dict = cloud_module.process_args(context.parent.params)
+    cloud_module.undeploy(config_file_as_dict(**config_as_dict))
+
+
+@click.group()
+@click.option('--cloud', default='nd.dokku', help='Cloud PaaS to deploy against (dokku, openshift, tsuru, heroku, etc). Prefix it with nd. to use our implementation.')
 @click.option('--deployhost', default='dokku.me', help='Host where to push the code to')
 @click.option('--exposehost', default='dokku.me', help='Public name that will form the URL of the exposed microservices')
 @click.option('--scenario', default='dev', help='Type of scenario of this deploy (dev, staging, production, integrated, etc)')
 @click.option('--area', default=getpass.getuser(), help='Name of the area (workspace?) in the cloud/paas you are using')
 @click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
-def undeploy(**kwargs):
-    cloud_module = importlib.import_module(kwargs["cloud"])
-    processed_args = cloud_module.process_args(kwargs)
-    cloud_module.undeploy(config_file_as_dict(**processed_args))
-
-
-@click.group()
-def cli(**kwargs):
+@click.option('--gitworkarea', default='/tmp', help='Path to the directory where the git clones etc will be performed')
+@click.option('--cfgfile', type=click.File('r'), help='Path to the config file')
+@click.pass_context
+def cli(context, **kwargs):
     """Start point for ndeploy."""
-    pass
+    click.echo("Starting with params %s and context params %s" % (kwargs, context.params))
 
 cli.add_command(clean)
 cli.add_command(deploy)
 cli.add_command(undeploy)
 
+#click.core.Context
 if __name__ == '__main__':
-    deploy()
+    cli()

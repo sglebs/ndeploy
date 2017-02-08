@@ -9,10 +9,10 @@ from nd.core import git_rm_all, remote_git_add, app_has_database, app_shared_ser
     repo_and_branch_and_app_name_and_app_props_iterator, app_has_dockerfile, procfile_iterator, app_has_procfile
 
 
-def process_args(args_as_dict):
-    args_as_dict["exposehost"] = "herokuapp.com"  # override regardless of what was passed
-    args_as_dict["deployhost"] = "git.heroku.com"  # override regardless of what was passed
-    return args_as_dict
+def process_args(config_as_dict):
+    config_as_dict["exposehost"] = "herokuapp.com"  # override regardless of what was passed
+    config_as_dict["deployhost"] = "git.heroku.com"  # override regardless of what was passed
+    return config_as_dict
 
 def clean(config_as_dict):
     undeploy(config_as_dict)
@@ -142,6 +142,6 @@ def heroku_deploy_apps (config_as_dict):
             for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):
                 cmd = "%s container:push -a %s %s" % (get_cli_command(config_as_dict), app_name, label)
                 print(cmd)
-                execute_program_and_print_output(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url)), )
+                execute_program_and_print_output(cmd, dir_where_to_run=get_repo_full_path_for_repo_dir_name(dir_name_for_repo(repo_url), config_as_dict))
         else:
             deploy_single_app_via_git_push(app_name, branch, config_as_dict, git_progress, repo_url)

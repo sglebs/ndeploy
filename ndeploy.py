@@ -42,7 +42,7 @@ def config_file_as_dict(**kwargs):
 @click.command()
 @click.pass_context
 def clean(context, **kwargs):
-    #click.echo("Cleaning with params %s and context %s" % (kwargs, context.meta))
+    #click.echo("Cleaning with params %s and context %s" % (kwargs, context.parent.params))
     cloud_module = importlib.import_module(context.parent.params["cloud"])
     config_as_dict = cloud_module.process_args(context.parent.params)
     cloud_module.clean(config_file_as_dict(**config_as_dict))
@@ -51,7 +51,7 @@ def clean(context, **kwargs):
 @click.command()
 @click.pass_context
 def deploy(context, **kwargs):
-    click.echo("Deploying with params %s and parent context params %s" % (kwargs, context.parent.params))
+    #click.echo("Deploying with params %s and parent context params %s" % (kwargs, context.parent.params))
     cloud_module = importlib.import_module(context.parent.params["cloud"])
     config_as_dict = cloud_module.process_args(context.parent.params)
     cloud_module.deploy(config_file_as_dict(**config_as_dict))
@@ -60,7 +60,7 @@ def deploy(context, **kwargs):
 @click.command()
 @click.pass_context
 def undeploy(context, **kwargs):
-    click.echo("Undeploying with params %s and context %s" % (kwargs, context.meta))
+    #click.echo("Undeploying with params %s and context %s" % (kwargs, context.meta))
     cloud_module = importlib.import_module(context.parent.params["cloud"])
     config_as_dict = cloud_module.process_args(context.parent.params)
     cloud_module.undeploy(config_file_as_dict(**config_as_dict))
@@ -78,7 +78,7 @@ def undeploy(context, **kwargs):
 @click.pass_context
 def cli(context, **kwargs):
     """Start point for ndeploy."""
-    click.echo("Starting with params %s and context params %s" % (kwargs, context.params))
+    #click.echo("Starting with params %s and context params %s" % (kwargs, context.params))
 
 cli.add_command(clean)
 cli.add_command(deploy)

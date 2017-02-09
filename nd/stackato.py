@@ -40,6 +40,7 @@ def deploy(config_as_dict):
     stackato_create_project_area(config_as_dict)
     stackato_create_empty_apps(config_as_dict)
     stackato_create_redis_services(config_as_dict)
+    stackato_create_postgres_services(config_as_dict)
     stackato_configure_created_apps(config_as_dict)
     stackato_deploy_apps(config_as_dict)
 
@@ -97,6 +98,7 @@ def stackato_configure_created_apps(config_as_dict):
         app_names_by_repo_dir_name[dir_name_for_repo(repo_url)] = app_name
         stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)  # env vars AFTER because some slam DATABASE_URL
         stackato_inject_redis_service_if_needed(config_as_dict, app_name, app_props)
+        stackato_inject_postgres_service_if_needed(config_as_dict, app_name, app_props)
         #stackato_configure_domains(config_as_dict, app_name, app_props)
 
 def stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props):
@@ -109,25 +111,42 @@ def stackato_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props)
     else:
         print("WARNING: NO ENV VARS for %s" % app_name)
 
+
+
 def stackato_create_redis_services(config_as_dict):
-    for service_name in shared_services("redis", config_as_dict):
-        cmd = "%s create-service redis %s" % (get_cli_command(config_as_dict), service_name)
-        print("...Creating Redis Service %s: %s" % (service_name, cmd))
+    stackato_create_generic_services(config_as_dict, "redis")
+
+
+def stackato_create_postgres_services(config_as_dict):
+    stackato_create_generic_services(config_as_dict, "postgresql")
+
+
+def stackato_create_generic_services(config_as_dict, generic_service_name):
+    for service_name in shared_services(generic_service_name, config_as_dict):
+        cmd = "%s create-service %s  %s" % (get_cli_command(config_as_dict), generic_service_name, service_name)
+        print("...Creating Service %s: %s" % (service_name, cmd))
         os.system(cmd)
 
+
 def stackato_inject_redis_service_if_needed(config_as_dict, app_name, app_props):
-    for service_name in app_shared_services("redis", config_as_dict, app_name, app_props):
+    stackato_inject_generic_service_if_needed(config_as_dict, app_name, app_props, "redis")
+
+
+def stackato_inject_postgres_service_if_needed(config_as_dict, app_name, app_props):
+    stackato_inject_generic_service_if_needed(config_as_dict, app_name, app_props, "postgresql")
+
+
+def stackato_inject_generic_service_if_needed(config_as_dict, app_name, app_props, generic_service_name):
+    for service_name in app_shared_services(generic_service_name, config_as_dict, app_name, app_props):
         cmd = "%s bind-service %s %s" % (get_cli_command(config_as_dict), service_name, app_name)
-        print("...Injecting Redis service %s into app %s: %s" % (service_name, app_name, cmd))
+        print("...Injecting %s service %s into app %s: %s" % (generic_service_name, service_name, app_name, cmd))
         err, out = execute_program(cmd)
         print(err)
         print(out)
-        if "Setting config vars" not in out:
-            raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
         #TODO: get URL of service and make it publicly available
-        url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        url_regex = "%s://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+" % generic_service_name
         urls = re.findall(url_regex, out)
-        injected_redis_url = urls[0]
-        print("...URLing Redis service %s with url %s in an env var" % (service_name, injected_redis_url))
-        cmd = "%s env-add %s %s_URL \"%s\" " % (get_cli_command(config_as_dict), app_name, service_name.upper().replace("-", "_"), injected_redis_url)
+        injected_generic_service_url = urls[0]
+        print("...URLing service %s with url %s in an env var" % (service_name, injected_generic_service_url))
+        cmd = "%s env-add %s %s_URL \"%s\" " % (get_cli_command(config_as_dict), app_name, service_name.upper().replace("-", "_"), injected_generic_service_url)
         os.system(cmd)

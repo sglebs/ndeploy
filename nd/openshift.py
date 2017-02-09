@@ -50,6 +50,7 @@ def openshift_create_project_area(config_as_dict):
     os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
     os.system("%s project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
     os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
+    os.system("%s secrets link builder scmsecret" % get_cli_command(config_as_dict)) # OpenShift 1.4 requires this
     os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % get_cli_command(config_as_dict))
 
 def openshift_create_empty_apps(config_as_dict):
@@ -70,7 +71,7 @@ def openshift_create_empty_apps(config_as_dict):
                    ' -e PROCFILE_TARGET={procfilelabel}'.format(cli=get_cli_command(config_as_dict),
                                                                 strategy=strategy,
                                                                 appname=app_name,
-                                                                repourl=get_http_repo_url(repo_url),
+                                                                repourl=repo_url,
                                                                 branch=branch,
                                                                 repofullpath=get_repo_full_path_for_repo_url(repo_url, config_as_dict),
                                                                 suffixfromlabel=suffix_from_label,

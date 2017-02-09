@@ -309,11 +309,11 @@ shared_services:
 ===============
 
 ```
-ndeploy deploy --deployhost=dokku.me /my/solution/ndeploy.toml
+ndeploy --deployhost=dokku.me --cfgfile=/my/solution/ndeploy.toml deploy
 ```
 In the case of openshift, you may have exposed URLs using a different hostname. In these cases, use exposehost:
 ```
-ndeploy deployhost=10.2.2.2 exposehost=my.domain.com --cloud=nd.openshift /my/solution/ndeploy.toml
+ndeploy --deployhost=10.2.2.2 --exposehost=my.domain.com --cloud=nd.openshift --cfgfile=/my/solution/ndeploy.toml deploy
 ```
 You may want to "ifdef" dev/staging/live in your configuration file. This can be done using jinja2 syntax:
 ```
@@ -323,7 +323,7 @@ You may want to "ifdef" dev/staging/live in your configuration file. This can be
 ```
 Obviously, for this to work you need to pass scenario=debug to ndeploy:
 ```
-ndeploy --deployhost=dokku-vagrant.sglebs.com --cloud=nd.dokku --scenario=debug /my/solution/ndeploy.toml
+ndeploy --deployhost=dokku-vagrant.sglebs.com --cloud=nd.dokku --scenario=debug --cfgfile=/my/solution/ndeploy.toml deploy
 ```
 If you need to template based on the target PaaS ("cloud" parameter, which can be passed in) or the deployhost, it can also be done, like this:
 ```

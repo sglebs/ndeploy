@@ -37,17 +37,19 @@ Planned:
 
 You need the CLI versions of each PaaS already installed:
 
- * dokku : https://github.com/dokku/dokku
-  * redis plugin: https://github.com/dokku/dokku-redis (if you plan to use Redis)
-  * postgres single container plugin: https://github.com/Flink/dokku-psql-single-container (if you plan to use Postgres)
-  * rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq (if you plan to use RabbitMQ)
-  * mongo plugin: https://github.com/dokku/dokku-mongo (if you plan to use MongoDB)
+ * dokku (https://github.com/dokku/dokku) can be used remotely via ssh and requires no custom CLI
+  * Install the redis plugin: https://github.com/dokku/dokku-redis (if you plan to use Redis)
+  * Install the postgres single container plugin: https://github.com/Flink/dokku-psql-single-container (if you plan to use Postgres)
+  * Install the rabbitmq plugin: https://github.com/dokku/dokku-rabbitmq (if you plan to use RabbitMQ)
+  * Install the mongo plugin: https://github.com/dokku/dokku-mongo (if you plan to use MongoDB)
    
  * oc if you plan to deploy to openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/ )
- 
+   * Use minishift to develop locally: https://www.openshift.org/vm/
+   
  * heroku: https://devcenter.heroku.com/articles/heroku-cli
  
  * stackato: http://downloads.stackato.com/client/v3.2.4/
+   * For local development, get a VM from http://downloads.stackato.com/vm/v3.6.2/
  
 You need the PaaS already installed. You probably want to start with them under Vagrant on your PC for development. 
 For each one of them, you want the plugins already installed (PostgreSQL, RabbitMQ, etc).

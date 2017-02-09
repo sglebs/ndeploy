@@ -22,6 +22,7 @@ we have support for:
   * dokku (```--cloud=nd.dokku``` for our built-in implementation - see sources in nd/dokku.py)
   * openshift origin (```--cloud=nd.openshift``` for our built-in implementation - see sources in nd/openshift.py)
   * heroku (```--cloud=nd.heroku``` for our built-in implementation - see sources in nd/heroku.py)
+  * HP Stackato (```--cloud=nd.stackato``` for our built-in implementation - see sources in nd/stackato.py)
   
 Planned:
   * IBM BlueMix

@@ -47,6 +47,8 @@ You need the CLI versions of each PaaS already installed:
  
  * heroku if you plan to deploy to Heroku
  
+ * stackato: http://downloads.stackato.com/client/v3.2.4/
+ 
 You need the PaaS already installed. You probably want to start with them under Vagrant on your PC for development. 
 For each one of them, you want the plugins already installed (PostgreSQL, RabbitMQ, etc).
 

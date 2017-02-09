@@ -45,7 +45,7 @@ You need the CLI versions of each PaaS already installed:
    
  * oc if you plan to deploy to openshift origin (see https://blog.openshift.com/using-openshift-3-on-your-local-environment/ )
  
- * heroku if you plan to deploy to Heroku
+ * heroku: https://devcenter.heroku.com/articles/heroku-cli
  
  * stackato: http://downloads.stackato.com/client/v3.2.4/
  

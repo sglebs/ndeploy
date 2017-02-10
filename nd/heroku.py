@@ -21,8 +21,7 @@ def clean(config_as_dict):
 
 def undeploy(config_as_dict):
     for repo, branch, app_name, app_props in reversed(list(repo_and_branch_and_app_name_and_app_props_iterator(config_as_dict))):
-        os.system("echo %s > confirm.txt" % app_name)
-        os.system("%s apps:destroy %s < confirm.txt" % (get_cli_command(config_as_dict), app_name))
+        os.system("%s apps:destroy %s --confirm %s" % (get_cli_command(config_as_dict), app_name, app_name))
 
 
 def deploy(config_as_dict):

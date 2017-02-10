@@ -105,7 +105,7 @@ def execute_program(cmd, dir_where_to_run=None, exec_progress = None):
                 exec_progress.stderr_line(output)
             if p.poll() != None:
                 break
-    return err, out
+    return err, out #TODO: return exit code?
 
 
 @timeout_decorator.timeout(10)

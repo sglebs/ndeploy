@@ -172,8 +172,8 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
                                                                dbname=get_openshift_db_name_from_app_name(app_name))
     print("Configuring database for %s :  %s " % (app_name, cmd))
     ok = execute_program_and_print_output(cmd)
-    if not ok:
-        return False
+    # if not ok:
+    #     return False
     db_url = "postgresql://user_{dbname}:pass_{dbname}@pg-{shortenedappname}:5432/db_{dbname}".format(
         shortenedappname=get_openshift_short_app_name(app_name),
         dbname=get_openshift_db_name_from_app_name(app_name),
@@ -181,8 +181,8 @@ def openshift_create_database_if_needed(config_as_dict, repo_url, app_name, app_
     print("Setting DATABASE_URL=%s   in %s" % (db_url, app_name))
     cmd = '%s env dc/%s -e DATABASE_URL=%s' % (get_cli_command(config_as_dict), app_name, db_url)
     ok = execute_program_and_print_output(cmd)
-    if not ok:
-        return False
+    # if not ok:
+    #     return False
 
 
 def get_openshift_template_contents(config_as_dict, openshift_template_path):

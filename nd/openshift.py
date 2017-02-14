@@ -4,7 +4,7 @@ import socket
 import timeout_decorator
 
 from nd.core import git_rm_all, app_has_database, \
-    execute_program_with_timeout, execute_program, \
+    execute_program, \
     dir_name_for_repo, git_clone_all, \
     repo_and_branch_and_app_name_iterator, \
     execute_program_and_print_output, \

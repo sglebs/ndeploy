@@ -49,7 +49,7 @@ def get_cli_command(config_as_dict):
 def openshift_create_project_area(config_as_dict):
     os.system("%s new-project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
     os.system("%s project %s" % (get_cli_command(config_as_dict), get_area_name(config_as_dict)))
-    os.system("%s secrets new scmsecret ssh-privatekey=$HOME/.ssh/id_rsa" % get_cli_command(config_as_dict)) # See https://blog.openshift.com/deploying-from-private-git-repositories/
+    os.system("%s secrets new scmsecret ssh-privatekey=%s" % (get_cli_command(config_as_dict), config_as_dict["privatekey"])) # See https://blog.openshift.com/deploying-from-private-git-repositories/
     os.system("%s secrets link builder scmsecret" % get_cli_command(config_as_dict)) # OpenShift 1.4 requires this
     os.system("%s secrets add serviceaccount/builder secrets/scmsecret" % get_cli_command(config_as_dict))
 

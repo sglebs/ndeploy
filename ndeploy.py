@@ -74,6 +74,7 @@ def undeploy(context, **kwargs):
 @click.option('--area', default=getpass.getuser(), help='Name of the area (workspace?) in the cloud/paas you are using')
 @click.option('--cli_dir', default='/usr/local/bin', help='Path to the directory with the cli tool to call (oc, heroku, etc)')
 @click.option('--gitworkarea', default='/tmp', help='Path to the directory where the git clones etc will be performed')
+@click.option('--privatekey', default='$HOME/.ssh/id_rsa', help='Path to the private key')
 @click.option('--cfgfile', type=click.File('r'), help='Path to the config file')
 @click.pass_context
 def cli(context, **kwargs):

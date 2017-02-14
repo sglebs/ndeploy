@@ -86,7 +86,7 @@ def dokku_create_rabbitmq_services(config_as_dict):
         print("...Creating RabbitMQ Service %s" % service_name)
         cmd = "ssh dokku@%s rabbitmq:create %s" % (config_as_dict.get("deployhost", "."), service_name)
         try:
-            err, out = execute_program_with_timeout(cmd)
+            err, out = execute_program(cmd)
             print(out)
             if len(err) > 0 and "already exists" not in err:
                 print(err)

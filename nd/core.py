@@ -2,7 +2,7 @@ import getpass
 import os, sys
 import shutil
 import git
-import timeout_decorator
+#import timeout_decorator # this decorator is not supported under Windows
 import subprocess
 import shlex
 from jinja2 import FileSystemLoader
@@ -108,9 +108,11 @@ def execute_program(cmd, dir_where_to_run=None, exec_progress = None):
     return err, out #TODO: return exit code?
 
 
-@timeout_decorator.timeout(10)
-def execute_program_with_timeout(cmd):
-    return execute_program(cmd)
+
+# this decorator is not supported under Windows
+# @timeout_decorator.timeout(10)
+# def execute_program_with_timeout(cmd):
+#     return execute_program(cmd)
 
 
 def execute_program_and_print_output(cmd, dir_where_to_run=None):

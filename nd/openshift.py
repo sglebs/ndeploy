@@ -206,7 +206,7 @@ def openshift_login(config_as_dict):
         if attempts > 5:
             break
         try:
-            err, out = execute_program_with_timeout(cmd)
+            err, out = execute_program(cmd)
             print(err)
             print(out)
             if "system:anonymous" in err or "provide credentials" in err:

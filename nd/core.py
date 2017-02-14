@@ -187,7 +187,8 @@ def git_clone_all(config_as_dict):
                 repo.git.checkout(branch)
             origin = repo.remotes.origin
             #origin.fetch(branch)
-            origin.pull(branch)
+            if config_as_dict["gitpull"]:
+                origin.pull(branch)
         else:
             os.makedirs(repo_full_path)
             try:

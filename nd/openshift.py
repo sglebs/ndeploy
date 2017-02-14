@@ -144,7 +144,7 @@ def openshift_inject_requiremets_app(config_as_dict, repo_url, app_name, app_nam
 
 def openshift_create_apps_env_vars_if_needed(config_as_dict, repo_url, app_name, app_props):
     if "envs" in app_props:
-        key_values = ['%s="%s"' % (key, value.replace(" ", "\\ ").replace('"', '\\"')) for key, value in
+        key_values = ['%s="%s"' % (key, str(value).replace(" ", "\\ ").replace('"', '\\"')) for key, value in
                       app_props["envs"].items()]
         if len(key_values) > 0:
             for label, cmd_line in procfile_iterator(config_as_dict, dir_name_for_repo(repo_url)):

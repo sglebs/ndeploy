@@ -131,8 +131,11 @@ def heroku_create_apps_env_vars_if_needed(config_as_dict, app_name, app_props):
 def heroku_deploy_apps (config_as_dict):
     git_progress = GitProgress()
     performed_container_login = False
+    strategy = config_as_dict.get("strategy")
     for repo_url, branch, app_name in repo_and_branch_and_app_name_iterator(config_as_dict):
-        if app_has_dockerfile(config_as_dict, dir_name_for_repo(repo_url)) and app_has_procfile(config_as_dict, dir_name_for_repo(repo_url)):
+        if app_has_dockerfile(config_as_dict, dir_name_for_repo(repo_url)) and \
+                app_has_procfile(config_as_dict, dir_name_for_repo(repo_url)) and \
+                (strategy == "auto" or strategy == "docker"):
             if not performed_container_login:
                 cmd = "%s container:login" % (get_cli_command(config_as_dict))
                 print(cmd)

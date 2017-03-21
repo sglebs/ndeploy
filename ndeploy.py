@@ -77,6 +77,7 @@ def undeploy(context, **kwargs):
 @click.option('--privatekey', default='$HOME/.ssh/id_rsa', help='Path to the private key')
 @click.option('--gitpull', type=click.BOOL, default=True, help='Whether ndeploy should perform git pull if a git clone is found at --gitworkarea')
 @click.option('--cfgfile', type=click.File('r'), help='Path to the config file')
+@click.option('--strategy', default='auto', help='Kind of strategy to use. Cloud-specific. auto, docker, buildpack, etc.')
 @click.pass_context
 def cli(context, **kwargs):
     """Start point for ndeploy."""

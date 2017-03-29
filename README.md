@@ -1,5 +1,4 @@
 # ndeploy
-=========
 
 Building and deploying apps that follow [12factor](http://www.12factor.net) is fun but can be tedious to properly configure - all those environment variables! 
 Also, when you have to deal with DEV, STAGING, LIVE the setting of these env vars can be a pain. If you want to be PaaS-portable, things get worse,
@@ -13,7 +12,6 @@ Using a config file as input (yaml, json or toml) you define all shared services
 ndeploy is basic and fragile for now, but quite useful and time saver (at least for us!).
 
 # PaaS support
-==============
 
 PaaS support is pluggable via Python modules. Example: ```--cloud=foo``` will work if ndeploy can find/load a "foo" Python module (foo.py) dynamically.
 We ship a few, prefixed with "nd" (nd stands for ndeploy) to avoid name collisions with the ones you may wish to provide. Currently
@@ -33,7 +31,6 @@ Planned:
   * ...
   
 # Pre-requisites
-================
 
 You need the CLI versions of each PaaS already installed:
 
@@ -55,12 +52,10 @@ You need the PaaS already installed. You probably want to start with them under 
 For each one of them, you want the plugins already installed (PostgreSQL, RabbitMQ, etc).
 
 # How to install ndeploy
-========================
 
  * pip3 install git+https://github.com/sglebs/ndeploy
 
 # How to configure your solution ("n" apps/services/microservices)
-==================================================================
 
 You need to build a config file describing your solution. It can be yaml, json or toml.
 This file can be templated (we use jinja2 internally), with values passed in at the command-line.
@@ -311,7 +306,6 @@ shared_services:
 ```
 
 # How to Deploy
-===============
 
 ```
 ndeploy --deployhost=dokku.me --cfgfile=/my/solution/ndeploy.toml deploy
@@ -337,15 +331,11 @@ If you need to template based on the target PaaS ("cloud" parameter, which can b
 ```
 
 # Related Projects
-=================
 
    * dpl: https://github.com/travis-ci/dpl 
    * https://github.com/nexxera/ndeploy is a descendant of "our" ndeploy. It adds support to build and promote docker images in a build pipeline, which saves CPU resources since you don't need a full clean build every time.
    
 # Special Thanks
-==============
+
 We would like to thank [Nexxera](http://www.nexxera.com) for their partial support of the development of ndeploy.  
-
-
-
 

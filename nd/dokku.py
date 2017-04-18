@@ -4,7 +4,7 @@ import re
 import timeout_decorator
 
 from nd.core import git_rm_all, remote_git_add, app_has_database, app_has_mongo, \
-    shared_services, execute_program_with_timeout, execute_program, \
+    shared_services, execute_program, \
     dir_name_for_repo, git_clone_all, \
     repo_and_branch_and_app_name_iterator, execute_program_and_print_output, \
     repo_and_branch_and_app_name_and_app_props_iterator, docker_options_iterator, \

@@ -159,8 +159,8 @@ def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props):
         err, out = execute_program(cmd)
         print(err, file=sys.stderr)
         print(out)
-        #if "Setting config vars" not in out:
-        #    raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
+        if "Setting config vars" not in out:
+            raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
         #TODO: get URL of service and make it publicly available
         url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         urls = re.findall(url_regex, out)

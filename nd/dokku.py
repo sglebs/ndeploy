@@ -1,6 +1,6 @@
 import os
 import re
-
+import sys
 import timeout_decorator
 
 from nd.core import git_rm_all, remote_git_add, app_has_database, app_has_mongo, \
@@ -89,7 +89,7 @@ def dokku_create_rabbitmq_services(config_as_dict):
             err, out = execute_program(cmd)
             print(out)
             if len(err) > 0 and "already exists" not in err:
-                print(err)
+                print(err, file=sys.stderr)
                 return False
         except timeout_decorator.TimeoutError:
             pass  # bug in dokku rabbitmq https://github.com/dokku/dokku-rabbitmq/issues/34
@@ -107,7 +107,7 @@ def dokku_create_redis_services(config_as_dict):
         print("...Creating Redis Service %s: %s" % (service_name, cmd))
         err, out = execute_program(cmd)
         print(out)
-        print(err)
+        print(err, file=sys.stderr)
         if len(err) > 0 and "not resolve host" in err:
             raise EnvironmentError("Could not configure Redis service %s: %s" % (service_name, err))
 
@@ -117,7 +117,7 @@ def dokku_create_empty_apps(config_as_dict):
         cmd = "ssh dokku@%s apps:create %s" % (config_as_dict.get("deployhost", "."), app_name)
         err, out = execute_program(cmd)
         if len(err) > 0 and 'already taken' not in err:  # some other error
-            print(err)
+            print(err, file=sys.stderr)
             return False
         else:
             print(out)
@@ -157,10 +157,10 @@ def dokku_inject_redis_service_if_needed(config_as_dict, app_name, app_props):
         cmd = "ssh dokku@%s redis:link %s %s" % (config_as_dict.get("deployhost", "."), service_name, app_name)
         print("...Injecting Redis service %s into app %s: %s" % (service_name, app_name, cmd))
         err, out = execute_program(cmd)
-        print(err)
+        print(err, file=sys.stderr)
         print(out)
-        if "Setting config vars" not in out:
-            raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
+        #if "Setting config vars" not in out:
+        #    raise EnvironmentError("Could not configure Redis (link it to app %s): %s" % (app_name, err))
         #TODO: get URL of service and make it publicly available
         url_regex = "redis://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         urls = re.findall(url_regex, out)

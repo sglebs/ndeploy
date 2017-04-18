@@ -95,14 +95,14 @@ def execute_program(cmd, dir_where_to_run=None, exec_progress = None):
         out = ""
         err = ""
         while True:
+            output = str(p.stderr.read(1), 'utf-8')
+            err += output
+            if len(output) > 0:
+                exec_progress.stderr_line(output)
             output = str(p.stdout.read(1), 'utf-8')
             out += output
             if len(output) > 0:
                 exec_progress.stdout_line(output)
-            output = str(p.stdout.read(1), 'utf-8')
-            err += output
-            if len(output) > 0:
-                exec_progress.stderr_line(output)
             if p.poll() != None:
                 break
     return err, out #TODO: return exit code?

@@ -1,31 +1,34 @@
 import functools
 import getpass
 import importlib
-
+import os
 import click
 import json
 import toml
 import yaml
-from jinja2 import BaseLoader
+from jinja2 import FileSystemLoader
 from jinja2.environment import Environment
-
+import copy
 from nd.core import merge_two_dicts
 
-## define custom tag handler
+## define custom tag handler - see http://stackoverflow.com/questions/5484016/how-can-i-do-string-concatenation-or-string-replacement-in-yaml
 def join(loader, node):
     seq = loader.construct_sequence(node)
     return ''.join([str(i) for i in seq])
 
 def templated_file_contents(options, configfile):
-    env = Environment(loader=BaseLoader)
-    template = env.from_string(configfile.read())
-    return template.render(options)
+    env = Environment(loader=FileSystemLoader(os.path.dirname(configfile.name)))
+    options_but_cfg_file = copy.copy(options)
+    del options_but_cfg_file["cfgfile"]
+    template = env.from_string(configfile.read(), globals=options_but_cfg_file)
+    return template.render(options_but_cfg_file)
 
 
 @functools.lru_cache(maxsize=2)
 def config_file_as_dict(**kwargs):
     cfgfile = kwargs["cfgfile"]
     cfgfile_contents = templated_file_contents(kwargs, kwargs["cfgfile"])
+#    print (cfgfile_contents)
     cfg_data = {}
     if cfgfile.name.endswith(".json"):
         cfgdata = json.loads(cfgfile_contents)

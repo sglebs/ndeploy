@@ -22,25 +22,15 @@ def join(loader, node):
     return ''.join([str(i) for i in seq])
 
 def templated_file_contents(options, configfile):
-    def read_file_contents(path):
-        with open(path, 'r') as content_file:
-            return content_file.read()
-    def read_url_contents(url):
-        session = requests.Session()
-        session.mount('file://', FileAdapter())
-        return session.get(url).text
-
-    if os.path.isfile(configfile):
-        loader = FileSystemLoader(os.path.dirname(configfile))
-        contents = read_file_contents(configfile)
+    paths = options["searchpath"].split(",") # CSV of PATHs
+    if os.path.isdir(paths[0]):
+        loader = FileSystemLoader(paths)
     else:
-        loader = URLloader(configfile)
-        contents = read_url_contents(configfile)
+        loader = URLloader(paths)
     env = Environment(loader=loader)
-    options_but_cfg_file = copy.copy(options)
-    del options_but_cfg_file["cfgfile"]
-    template = env.from_string(contents, globals=options_but_cfg_file)
-    return template.render(options_but_cfg_file)
+    contents, config_full_path, _a_lambda_ = loader.get_source(env, configfile)
+    template = env.from_string(contents, globals=options)
+    return template.render(options)
 
 
 @functools.lru_cache(maxsize=2)
@@ -98,7 +88,8 @@ def undeploy(context, **kwargs):
 @click.option('--gitworkarea', default='/tmp', help='Path to the directory where the git clones etc will be performed')
 @click.option('--privatekey', default='$HOME/.ssh/id_rsa', help='Path to the private key')
 @click.option('--gitpull', type=click.BOOL, default=True, help='Whether ndeploy should perform git pull if a git clone is found at --gitworkarea')
-@click.option('--cfgfile', default="solution.yaml", help='Path to the config file')
+@click.option('--cfgfile', default="solution.yaml", help='Name of the config file to search for in --searchpath')
+@click.option('--searchpath', default=".", help='A CSV of locations where the cfgfile and its includes will be searched for')
 @click.option('--strategy', default='auto', help='Kind of strategy to use. Cloud-specific. auto, docker, buildpack, etc.')
 @click.pass_context
 def cli(context, **kwargs):

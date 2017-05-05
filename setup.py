@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ndeploy',
-    version='0.6.8',
+    version='0.6.9',
     packages=find_packages(),
     description='Deploys n microservices to n PaaS',
     url='https://github.com/sglebs/ndeploy',
@@ -14,7 +14,9 @@ setup(
         'timeout-decorator',
         'toml',
         'pyyaml',
-        'click'
+        'click',
+        'requests',
+        'requests-file'
     ],
     py_modules=['ndeploy'],
     entry_points='''

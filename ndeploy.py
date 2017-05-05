@@ -10,6 +10,11 @@ from jinja2 import FileSystemLoader
 from jinja2.environment import Environment
 import copy
 from nd.core import merge_two_dicts
+from nd.URLLoader import URLloader
+import requests
+from requests_file import FileAdapter
+
+
 
 ## define custom tag handler - see http://stackoverflow.com/questions/5484016/how-can-i-do-string-concatenation-or-string-replacement-in-yaml
 def join(loader, node):
@@ -17,10 +22,24 @@ def join(loader, node):
     return ''.join([str(i) for i in seq])
 
 def templated_file_contents(options, configfile):
-    env = Environment(loader=FileSystemLoader(os.path.dirname(configfile.name)))
+    def read_file_contents(path):
+        with open(path, 'r') as content_file:
+            return content_file.read()
+    def read_url_contents(url):
+        session = requests.Session()
+        session.mount('file://', FileAdapter())
+        return session.get(url).text
+
+    if os.path.isfile(configfile):
+        loader = FileSystemLoader(os.path.dirname(configfile))
+        contents = read_file_contents(configfile)
+    else:
+        loader = URLloader(configfile)
+        contents = read_url_contents(configfile)
+    env = Environment(loader=loader)
     options_but_cfg_file = copy.copy(options)
     del options_but_cfg_file["cfgfile"]
-    template = env.from_string(configfile.read(), globals=options_but_cfg_file)
+    template = env.from_string(contents, globals=options_but_cfg_file)
     return template.render(options_but_cfg_file)
 
 
@@ -30,11 +49,11 @@ def config_file_as_dict(**kwargs):
     cfgfile_contents = templated_file_contents(kwargs, kwargs["cfgfile"])
 #    print (cfgfile_contents)
     cfg_data = {}
-    if cfgfile.name.endswith(".json"):
+    if cfgfile.endswith(".json"):
         cfgdata = json.loads(cfgfile_contents)
-    elif cfgfile.name.endswith(".toml"):
+    elif cfgfile.endswith(".toml"):
         cfgdata = toml.loads(cfgfile_contents)
-    elif cfgfile.name.endswith(".yaml"):
+    elif cfgfile.endswith(".yaml"):
         yaml.add_constructor('!join', join) # http://stackoverflow.com/questions/5484016/how-can-i-do-string-concatenation-or-string-replacement-in-yaml
         cfgdata = yaml.load(cfgfile_contents)
     else:
@@ -79,7 +98,7 @@ def undeploy(context, **kwargs):
 @click.option('--gitworkarea', default='/tmp', help='Path to the directory where the git clones etc will be performed')
 @click.option('--privatekey', default='$HOME/.ssh/id_rsa', help='Path to the private key')
 @click.option('--gitpull', type=click.BOOL, default=True, help='Whether ndeploy should perform git pull if a git clone is found at --gitworkarea')
-@click.option('--cfgfile', type=click.File('r'), help='Path to the config file')
+@click.option('--cfgfile', default="solution.yaml", help='Path to the config file')
 @click.option('--strategy', default='auto', help='Kind of strategy to use. Cloud-specific. auto, docker, buildpack, etc.')
 @click.pass_context
 def cli(context, **kwargs):
